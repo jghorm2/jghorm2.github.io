@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Diablo Roller</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
+	<h1 class="text-3xl font-bold mb-6">Diablo Roller</h1>
+
+  <!-- Controls -->
+	<div class="bg-gray-800 p-6 rounded-2xl shadow-lg space-y-4 w-full max-w-2xl">
+		<div class="grid grid-cols-2 gap-4">
+			<label class="flex items-center justify-between gap-4">
+				<span class="font-semibold">Character Level:</span>
+				<input id="cl" type="number" min="1" max="20" value="1" class="text-black px-2 py-1 rounded w-24">
+			</label>
+			<label class="flex items-center justify-between gap-4">
+				<span class="font-semibold">Dungeon Level:</span>
+				<input id="dl" type="number" min="1" max="20" value="1" class="text-black px-2 py-1 rounded w-24">
+			</label>
+			<label class="flex items-center justify-between gap-4">
+				<span class="font-semibold"># of Rolls:</span>
+				<input id="rolls" type="number" min="1" max="50" value="1" class="text-black px-2 py-1 rounded w-24">
+			</label>
+			<label class="flex items-center justify-between gap-4">
+				<span class="font-semibold">Force Outcome:</span>
+				<select id="forcedOutcome" class="text-black px-2 py-1 rounded w-full">
+					<option value="random">Random</option>
+					<optgroup label="Base Outcomes">
+						<option value="0">No Loot</option>
+						<option value="1">Gold</option>
+						<option value="2">Potion</option>
+						<option value="4">Spell Consumable</option>
+						<option value="3">Gear</option>
+						<option value="5">Magic Gear</option>
+					</optgroup>
+					<optgroup label="Force Gear — Weapon">
+						<option value="23">Mundane Weapon</option>
+						<option value="24">Magic Weapon</option>
+						<option value="20">Weapon (Prefix)</option>
+						<option value="21">Weapon (Suffix)</option>
+						<option value="22">Weapon (Prefix + Suffix)</option>
+					</optgroup>
+					<optgroup label="Force Gear — Armor">
+						<option value="33">Mundane Armor</option>
+						<option value="34">Magic Armor</option>
+						<option value="30">Armor (Prefix)</option>
+						<option value="31">Armor (Suffix)</option>
+						<option value="32">Armor (Prefix + Suffix)</option>
+					</optgroup>
+				</select>
+			</label>
+		</div>
+
+		<button id="rollBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold w-full">
+			Roll Loot
+		</button>
+	</div>
+
+<!-- Results -->
+	<div id="results" class="mt-6 w-full max-w-3xl space-y-2"></div>
+
+	<script>
+
+	const cl = Math.max(1, Math.min(20, parseInt(document.getElementById("cl").value || "1", 10)));
+	const dl = Math.max(1, Math.min(20, parseInt(document.getElementById("dl").value || "1", 10)));
+	const ll = cl+dl
+	const tier = getTier(ll);
+
+function rollDice(num, sides) {
+			let total = 0;
+			for (let i = 0; i < num; i++) total += Math.floor(Math.random() * sides) + 1;
+		return total;
+	}
+
+function getTier(ll) {
+			if (ll < 9) return 1;
+			if (ll < 17) return 2;
+			if (ll < 25) return 3;
+			return 4;
+    }
+
+// ---------- Tables ----------
+const potionTable = [
+		{min:1, max:10, name:"Small Healing Potion"},
+		{min:11, max:20, name:"Small Mana Potion"},
+		{min:21, max:24, name:"Small Rejuvination Potion"},
+		{min:25, max:39, name:"Large Healing Potion"},
+		{min:40, max:54, name:"Large Mana Potion"},
+		{min:55, max:58, name:"Large Rejuvination Potion"},
+		{min:59, max:60, name:"Full Rejuvination Potion"}
+	];
+
+const spellTables = {
+	cantrip: [
+		"(C) Acid Splash",
+		"(C) Blade Ward",
+		"(C) Booming Blade",
+		"(C) Chill Touch",
+		"(C) Eldritch Blast",
+		"(C) Fire Bolt",
+		"(C) Frostbite",
+		"(C) Green-Flame Blade",
+		"(C) Guidance",
+		"(C) Gust",
+		"(C) Infestation",
+		"(C) Lightning Lure",
+		"(C) Mage Hand",
+		"(C) Magic Stone",
+		"(C) Mind Sliver",
+		"(C) Poison Spray",
+		"(C) Primal Savagery",
+		"(C) Produce Flame",
+		"(C) Ray of Frost",
+		"(C) Sacred Flame",
+		"(C) Shillelagh",
+		"(C) Shocking Grasp",
+		"(C) Spare the Dying",
+		"(C) Sword Burst",
+		"(C) Thorn Whip",
+		"(C) Thunderclap",
+		"(C) Toll the Dead",
+		"(C) True Strike",
+		"(C) Vicious Mockery",
+		"(C) Word of Radiance"
+  ],
+  level1: [
+		"(1) Armor of Agathys",
+		"(1) Arms of Hadar",
+		"(1) Bane",
+		"(1) Bless",
+		"(1) Burning Hands",
+		"(1) Catapult",
+		"(1) Chaos Bolt",
+		"(1) Chromatic Orb",
+		"(1) Compelled Duel",
+		"(1) Cure Wounds",
+		"(1) Detect Magic",
+		"(1) Detect Poison and Disease",
+		"(1) Dissonant Whispers",
+		"(1) Divine Favor",
+		"(1) Earth Tremor",
+		"(1) Ensnaring Strike",
+		"(1) Entangle",
+		"(1) Expeditious Retreat",
+		"(1) Faerie Fire",
+		"(1) False Life",
+		"(1) Find Familiar",
+		"(1) Fog Cloud",
+		"(1) Frost Fingers",
+		"(1) Gift of Alacrity",
+		"(1) Goodberry",
+		"(1) Grease",
+		"(1) Guiding Bolt",
+		"(1) Hail of Thorns",
+		"(1) Healing Word",
+		"(1) Hellish Rebuke",
+		"(1) Heroism",
+		"(1) Hex",
+		"(1) Hunter's Mark",
+		"(1) Ice Knife",
+		"(1) Inflict Wounds",
+		"(1) Mage Armor",
+		"(1) Magic Missile",
+		"(1) Protection from Evil and Good",
+		"(1) Ray of Sickness",
+		"(1) Sanctuary",
+		"(1) Searing Smite",
+		"(1) Shield",
+		"(1) Shield of Faith",
+		"(1) Sleep",
+		"(1) Tasha's Caustic Brew",
+		"(1) Tasha's Hideous Laughter",
+		"(1) Thunderous Smite",
+		"(1) Thunderwave",
+		"(1) Wrathful Smite",
+		"(1) Zephyr Strike",
+  ],
+  level2: [
+		"(2) Aganazzar's Scorcher",
+		"(2) Aid",
+		"(2) Barkskin",
+		"(2) Blindness/Deafness",
+		"(2) Blur",
+		"(2) Branding Smite",
+		"(2) Calm Emotions",
+		"(2) Cloud of Daggers",
+		"(2) Cordon of Arrows",
+		"(2) Crown of Madness",
+		"(2) Darkness",
+		"(2) Darkvision",
+		"(2) Dragon's Breath",
+		"(2) Enlarge/Reduce",
+		"(2) Flame Blade",
+		"(2) Flaming Sphere",
+		"(2) Healing Spirit",
+		"(2) Heat Metal",
+		"(2) Hold Person",
+		"(2) Invisibility",
+		"(2) Kinetic Jaunt",
+		"(2) Lesser Restoration",
+		"(2) Magic Weapon",
+		"(2) Melf's Acid Arrow",
+		"(2) Mind Spike",
+		"(2) Mirror Image",
+		"(2) Misty Step",
+		"(2) Phantasmal Force",
+		"(2) Prayer of Healing",
+		"(2) Pyrotechnics",
+		"(2) Ray of Enfeeblement",
+		"(2) Scorching Ray",
+		"(2) Shadow Blade",
+		"(2) Shatter",
+		"(2) Silence",
+		"(2) Spike Growth",
+		"(2) Spiritual Weapon",
+		"(2) Tasha's Mind Whip",
+		"(2) Web",
+		"(2) Wither and Bloom",
+  ],
+  level3: [
+		"(3) Animate Dead",
+		"(3) Aura of Vitality",
+		"(3) Beacon of Hope",
+		"(3) Blinding Smite",
+		"(3) Blink",
+		"(3) Conjure Barrage",
+		"(3) Counterspell",
+		"(3) Crusader's Mantle",
+		"(3) Daylight",
+		"(3) Dispel Magic",
+		"(3) Elemental Weapon",
+		"(3) Erupting Earth",
+		"(3) Fear",
+		"(3) Fireball",
+		"(3) Flame Arrows",
+		"(3) Fly",
+		"(3) Glyph of Warding",
+		"(3) Haste",
+		"(3) Hunger Of Hadar",
+		"(3) Hypnotic Pattern",
+		"(3) Intellect Fortress",
+		"(3) Life Transference",
+		"(3) Lightning Arrow",
+		"(3) Lightning Bolt",
+		"(3) Major Image",
+		"(3) Mass Healing Word",
+		"(3) Meld into Stone",
+		"(3) Melf's Minute Meteors",
+		"(3) Pulse Wave",
+		"(3) Remove Curse",
+		"(3) Revivify",
+		"(3) Slow",
+		"(3) Spirit Guardians",
+		"(3) Summon Lesser Demons",
+		"(3) Summon Shadowspawn",
+		"(3) Summon Undead",
+		"(3) Thunder Step",
+		"(3) Vampiric Touch",
+		"(3) Wall of Water",
+		"(3) Wind Wall",
+  ],
+  level4: [
+		"(4) Aura of Life",
+		"(4) Aura of Purity",
+		"(4) Banishment",
+		"(4) Blight",
+		"(4) Confusion",
+		"(4) Conjure Minor Elementals",
+		"(4) Death Ward",
+		"(4) Dimension Door",
+		"(4) Dominate Beast",
+		"(4) Evard's Black Tentacles",
+		"(4) Fire Shield",
+		"(4) Grasping Vine",
+		"(4) Gravity Sinkhole",
+		"(4) Greater Invisibility",
+		"(4) Guardian of Faith",
+		"(4) Guardian of Nature",
+		"(4) Otiluke's Resilient Sphere",
+		"(4) Phantasmal Killer",
+		"(4) Polymorph",
+		"(4) Raulothim's Psychic Lance",
+		"(4) Shadow Of Moil",
+		"(4) Staggering Smite",
+		"(4) Stone Shape",
+		"(4) Stoneskin",
+		"(4) Storm Sphere",
+		"(4) Summon Aberration",
+		"(4) Summon Construct",
+		"(4) Summon Elemental",
+		"(4) Summon Greater Demon",
+		"(4) Wall of Fire",
+  ],
+  level5: [
+		"(5) Animate Objects",
+		"(5) Banishing Smite",
+		"(5) Bigby's Hand",
+		"(5) Circle of Power",
+		"(5) Cloudkill",
+		"(5) Cone of Cold",
+		"(5) Conjure Elemental",
+		"(5) Conjure Volley",
+		"(5) Contagion",
+		"(5) Danse Macabre",
+		"(5) Dawn",
+		"(5) Destructive Wave",
+		"(5) Dispel Evil and Good",
+		"(5) Far Step",
+		"(5) Flame Strike",
+		"(5) Hold Monster",
+		"(5) Holy Weapon",
+		"(5) Immolation",
+		"(5) Insect Plague",
+		"(5) Negative Energy Flood",
+		"(5) Passwall",
+		"(5) Steel Wind Strike",
+		"(5) Summon Celestial",
+		"(5) Swift Quiver",
+		"(5) Synaptic Static",
+		"(5) Telekinesis",
+		"(5) Temporal Shunt",
+		"(5) Wall of Force",
+		"(5) Wall of Light",
+		"(5) Wall of Stone",
+  ],
+  level6: [
+		"(6) Blade Barrier",
+		"(6) Bones of the Earth",
+		"(6) Chain Lightning",
+		"(6) Circle of Death",
+		"(6) Disintegrate",
+		"(6) Gravity Fissure",
+		"(6) Harm",
+		"(6) Heal",
+		"(6) Investiture of Flame",
+		"(6) Investiture of Ice",
+		"(6) Investiture of Stone",
+		"(6) Mental Prison",
+		"(6) Scatter",
+		"(6) Soul Cage",
+		"(6) Summon Fiend",
+		"(6) Sunbeam",
+		"(6) Tasha's Otherworldly Guise",
+		"(6) True Seeing",
+		"(6) Wall of Ice",
+		"(6) Wall of Thorns",
+  ],
+  level7: [
+		"(7) Crown of Stars",
+		"(7) Finger of Death",
+		"(7) Fire Storm",
+		"(7) Forcecage",
+		"(7) Mordenkainen's Sword",
+		"(7) Power Word: Pain",
+		"(7) Prismatic Spray",
+		"(7) Regenerate",
+		"(7) Reverse Gravity",
+		"(7) Whirlwind",
+  ],
+  level8: [
+		"(8) Abi-Dalzim's Horrid Wilting",
+		"(8) Animal Shapes",
+		"(8) Antipathy/Sympathy",
+		"(8) Dark Star",
+		"(8) Dominate Monster",
+		"(8) Earthquake",
+		"(8) Holy Aura",
+		"(8) Mind Blank",
+		"(8) Power Word: Stun",
+		"(8) Sunburst",
+  ],
+  level9: [
+		"(9) Blade of Disaster",
+		"(9) Foresight",
+		"(9) Invulnerability",
+		"(9) Mass Heal",
+		"(9) Meteor Swarm",
+		"(9) Prismatic Wall",
+		"(9) Psychic Scream",
+		"(9) Ravenous Void",
+		"(9) Time Stop",
+		"(9) Wish"  ]
+}
+
+const weaponTable = [
+		{min:1, max:4, name:"Club"},
+		{min:5, max:9, name:"Dagger"},
+		{min:10, max:13, name:"Greatclub"},
+		{min:14, max:17, name:"Handaxe"},
+		{min:18, max:21, name:"Javelin"},
+		{min:22, max:25, name:"Light Hammer"},
+		{min:26, max:30, name:"Mace"},
+		{min:31, max:34, name:"Metal Knuckles"},
+		{min:35, max:38, name:"Quarterstaff"},
+		{min:39, max:42, name:"Sickle"},
+		{min:43, max:46, name:"Spear"},
+		{min:47, max:50, name:"Light Crossbow"},
+		{min:51, max:54, name:"Dart"},
+		{min:55, max:59, name:"Shortbow"},
+		{min:60, max:63, name:"Sling"},
+		{min:64, max:72, name:"Battleaxe"},
+		{min:73, max:80, name:"Flail"},
+		{min:81, max:88, name:"Glaive"},
+		{min:89, max:97, name:"Greataxe"},
+		{min:98, max:105, name:"Greatsword"},
+		{min:106, max:113, name:"Halberd"},
+		{min:114, max:121, name:"Lance"},
+		{min:122, max:130, name:"Longsword"},
+		{min:131, max:138, name:"Maul"},
+		{min:139, max:146, name:"Morningstar"},
+		{min:147, max:154, name:"Pike"},
+		{min:155, max:162, name:"Rapier"},
+		{min:163, max:170, name:"Scimitar"},
+		{min:171, max:178, name:"Scythe"},
+		{min:179, max:187, name:"Shortsword"},
+		{min:188, max:195, name:"Trident"},
+		{min:196, max:204, name:"Warhammer"},
+		{min:205, max:212, name:"War pick"},
+		{min:213, max:220, name:"Whip"},
+		{min:221, max:228, name:"Blowgun"},
+		{min:229, max:238, name:"Hand Crossbow"},
+		{min:239, max:246, name:"Heavy Crossbow"},
+		{min:247, max:256, name:"Longbow"},
+		{min:257, max:263, name:"Cudgel (Club*)"},
+		{min:264, max:272, name:"Dirk (Dagger*)"},
+		{min:273, max:279, name:"Gnarled Club (Greatclub*)"},
+		{min:280, max:286, name:"Hatchet (Handaxe*)"},
+		{min:287, max:293, name:"Harpoon (Javelin*)"},
+		{min:294, max:300, name:"Knobkerrie (Light Hammer*)"},
+		{min:301, max:309, name:"Mallet (Mace*)"},
+		{min:310, max:316, name:"Claws (Metal Knuckles*)"},
+		{min:317, max:323, name:"War Staff (Quarterstaff*)"},
+		{min:324, max:330, name:"Hand Scythe (Sickle*)"},
+		{min:331, max:339, name:"Mancatcher (Spear*)"},
+		{min:340, max:346, name:"Arbalest (Light Crossbow*)"},
+		{min:347, max:353, name:"Shuriken (Dart*)"},
+		{min:354, max:362, name:"Horse Bow (Shortbow*)"},
+		{min:363, max:369, name:"Hurler (Sling*)"},
+		{min:370, max:383, name:"Bearded Axe (Battleaxe*)"},
+		{min:384, max:394, name:"Shredder (Flail*)"},
+		{min:395, max:405, name:"Bardiche (Glaive*)"},
+		{min:406, max:419, name:"Executioner (Greataxe*)"},
+		{min:420, max:433, name:"Claymore (Greatsword*)"},
+		{min:434, max:444, name:"Poleaxe (Halberd*)"},
+		{min:445, max:455, name:"Ranseur (Lance*)"},
+		{min:456, max:469, name:"Broad Sword (Longsword*)"},
+		{min:470, max:480, name:"Sledge (Maul*)"},
+		{min:481, max:491, name:"Flanged Mace (Morningstar*)"},
+		{min:492, max:502, name:"Partisan (Pike*)"},
+		{min:503, max:513, name:"Spadroon (Rapier*)"},
+		{min:514, max:524, name:"Sabre (Scimitar*)"},
+		{min:525, max:535, name:"Giant Thresher (Scythe*)"},
+		{min:536, max:549, name:"Gladius (Shortsword*)"},
+		{min:550, max:560, name:"Brandistock (Trident*)"},
+		{min:561, max:574, name:"Battle Gavel (Warhammer*)"},
+		{min:575, max:585, name:"Crowbill (War pick*)"},
+		{min:586, max:596, name:"Flog (Whip*)"},
+		{min:597, max:607, name:"Sarbacan (Blowgun*)"},
+		{min:608, max:621, name:"Stake Thrower (Hand Crossbow*)"},
+		{min:622, max:632, name:"Ballista (Heavy Crossbow*)"},
+		{min:633, max:643, name:"War Bow (Longbow*)"},
+		{min:644, max:653, name:"Truncheon (Club**)"},
+		{min:654, max:666, name:"Stiletto (Dagger**)"},
+		{min:667, max:676, name:"Tyrant (Greatclub**)"},
+		{min:677, max:686, name:"Cleaver (Handaxe**)"},
+		{min:687, max:696, name:"Dardo (Javelin**)"},
+		{min:697, max:706, name:"Hurlbat (Light Hammer**)"},
+		{min:707, max:719, name:"Scepter (Mace**)"},
+		{min:720, max:729, name:"Kaiser Fist (Metal Knuckles**)"},
+		{min:730, max:739, name:"Rune Staff (Quarterstaff**)"},
+		{min:740, max:749, name:"Thresher (Sickle**)"},
+		{min:750, max:759, name:"Yari (Spear**)"},
+		{min:760, max:769, name:"Battle Crossbow (Light Crossbow**)"},
+		{min:770, max:779, name:"Kunai (Dart**)"},
+		{min:780, max:791, name:"Composite Bow (Shortbow**)"},
+		{min:792, max:801, name:"Hand Trebuchet (Sling**)"},
+		{min:802, max:821, name:"Tabar (Battleaxe**)"},
+		{min:822, max:837, name:"Scorpion Flail (Flail**)"},
+		{min:838, max:853, name:"Kwan Dao (Glaive**)"},
+		{min:854, max:873, name:"Gothic Axe (Greataxe**)"},
+		{min:874, max:893, name:"Zweihander (Greatsword**)"},
+		{min:894, max:909, name:"Bec de Corbin (Halberd**)"},
+		{min:910, max:925, name:"Spetum (Lance**)"},
+		{min:926, max:945, name:"Bastard Sword (Longsword**)"},
+		{min:946, max:961, name:"Driver (Maul**)"},
+		{min:962, max:977, name:"Devil Star (Morningstar**)"},
+		{min:978, max:993, name:"Guisarme (Pike**)"},
+		{min:994, max:1009, name:"Epee (Rapier**)"},
+		{min:1010, max:1025, name:"Falchion (Scimitar**)"},
+		{min:1026, max:1041, name:"Grimm (Scythe**)"},
+		{min:1042, max:1060, name:"Tulwar (Shortsword**)"},
+		{min:1061, max:1076, name:"War Fork (Trident**)"},
+		{min:1077, max:1096, name:"Skullcracker (Warhammer**)"},
+		{min:1097, max:1112, name:"Mattock (War pick**)"},
+		{min:1113, max:1128, name:"Scourge (Whip**)"},
+		{min:1129, max:1144, name:"Sumpitan (Blowgun**)"},
+		{min:1145, max:1164, name:"Bolt Pistol (Hand Crossbow**)"},
+		{min:1165, max:1180, name:"Colossus Crossbow (Heavy Crossbow**)"},
+		{min:1181, max:1200, name:"Siege Bow (Longbow**)"}
+	];
+
+const armorTable = [
+		{min:1, max:7, name:"Sandals"},
+		{min:8, max:14, name:"Shoes"},
+		{min:15, max:21, name:"Leather Boots"},
+		{min:22, max:28, name:"Sash"},
+		{min:29, max:35, name:"Belt"},
+		{min:36, max:42, name:"Leather Gloves"},
+		{min:43, max:49, name:"Heavy Leather Gloves"},
+		{min:50, max:56, name:"Leather Cap"},
+		{min:57, max:63, name:"Skull Helmet"},
+		{min:64, max:72, name:"Buckler"},
+		{min:73, max:82, name:"Shield"},
+		{min:83, max:90, name:"Cloak"},
+		{min:91, max:98, name:"Cape"},
+		{min:99, max:106, name:"Quilted Armor"},
+		{min:107, max:114, name:"Gambeson"},
+		{min:115, max:122, name:"Padded Armor"},
+		{min:123, max:130, name:"Leather Armor"},
+		{min:131, max:138, name:"Sudded Leather Armor"},
+		{min:139, max:146, name:"Hide Armor"},
+		{min:147, max:154, name:"Chain Shirt"},
+		{min:155, max:162, name:"Chain Mail"},
+		{min:163, max:197, name:"Ring"},
+		{min:198, max:232, name:"Amulet"},
+		{min:233, max:243, name:"Heavy Leather Boots"},
+		{min:244, max:254, name:"Chain Boots"},
+		{min:255, max:265, name:"Heavy Leather Belt"},
+		{min:266, max:276, name:"Vambrace"},
+		{min:277, max:287, name:"Chain Gloves"},
+		{min:288, max:298, name:"Bone Mask"},
+		{min:299, max:309, name:"Crown"},
+		{min:310, max:320, name:"Full Helm"},
+		{min:321, max:332, name:"Kite Shield"},
+		{min:333, max:344, name:"Large Shield"},
+		{min:345, max:356, name:"Hardened Leather Armor"},
+		{min:357, max:368, name:"Serpentskin Armor"},
+		{min:369, max:380, name:"Breast Plate"},
+		{min:381, max:392, name:"Cuirass"},
+		{min:393, max:404, name:"Field Plate"},
+		{min:405, max:416, name:"Scale Mail"},
+		{min:417, max:428, name:"Ring Mail"},
+		{min:429, max:440, name:"Wyrmhide Armor"},
+		{min:441, max:452, name:"Splint Mail"},
+		{min:453, max:472, name:"Light Plate Boots"},
+		{min:473, max:492, name:"Greaves"},
+		{min:493, max:512, name:"Mithril Coil"},
+		{min:513, max:532, name:"Plated Belt"},
+		{min:533, max:552, name:"Light Plate Gloves"},
+		{min:553, max:572, name:"Diadem"},
+		{min:573, max:592, name:"Circlet"},
+		{min:593, max:612, name:"Great Helm"},
+		{min:613, max:632, name:"Tower Shield"},
+		{min:633, max:653, name:"Shroud"},
+		{min:654, max:674, name:"Grand Robe"},
+		{min:675, max:695, name:"Light Plate"},
+		{min:696, max:716, name:"Half Plate"},
+		{min:717, max:737, name:"Demonhide Armor"},
+		{min:738, max:758, name:"Archon Plate"},
+		{min:759, max:779, name:"Mesh Armor"},
+		{min:780, max:800, name:"Tigulated Mail"},
+		{min:801, max:821, name:"Full Plate Mail"},
+		{min:822, max:842, name:"Ancient Plate"},
+		{min:843, max:867, name:"Plate Gauntlets"},
+		{min:868, max:892, name:"Armet"},
+		{min:893, max:917, name:"Gothic Shield"},
+		{min:918, max:942, name:"Aegis"},
+		{min:943, max:971, name:"Gothic Plate"},
+		{min:972, max:1000, name:"Templar Plate"},
+	];
+
+const prefixTable = [
+		{min:1, max:4, name:"Obsidian", benefit:"When you take Bludgeoning damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:5, max:8, name:"Ebony", benefit:"When you take Piercing damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:9, max:12, name:"Jet", benefit:"When you take Slashing damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:13, max:16, name:"Jade", benefit:"When you take Acid damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:17, max:20, name:"Sapphire", benefit:"When you take Cold damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:21, max:24, name:"Ruby", benefit:"When you take Fire damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:25, max:28, name:"Kalkite", benefit:"When you take Force damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:29, max:32, name:"Topaz", benefit:"When you take Lightning damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:33, max:36, name:"Ivory", benefit:"When you take Necrotic damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:37, max:40, name:"Emerald", benefit:"When you take Poison damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:41, max:44, name:"Amethyst", benefit:"When you take Psychic damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:45, max:48, name:"Pearl", benefit:"When you take Radiant damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:49, max:52, name:"Amber", benefit:"When you take Thunder damage, you can reduce it by 1d8, to a minimum of 1."},
+		{min:53, max:64, name:"Saintly", benefit:"When a non-living enemy attacks you, increase your AC by 1."},
+		{min:65, max:74, name:"Sinful", benefit:"When a living enemy attacks you, increase your AC by 1."},
+		{min:75, max:84, name:"Entrenched", benefit:"Your AC against ranged attacks is increased by 1.  "},
+		{min:85, max:92, name:"Sly", benefit:"When you take damage from a weapon attack or spell, you regain 1d4-1 Spell Points.  "},
+		{min:93, max:100, name:"Calculating", benefit:"When you take damage from a weapon attack or spell, you regain 1d6-1 Spell Points.  "},
+		{min:101, max:118, name:"Glorious", benefit:"You gain a +1 bonus to your AC. "},
+		{min:119, max:132, name:"Valiant ", benefit:"You gain a bonus to your AC equal to the number of enemies adjacent to you "},
+		{min:133, max:146, name:"Blessed", benefit:"You gain a bonus to your AC equal to the number of allies adjacent to you "},
+		{min:147, max:150, name:"Durasteel", benefit:"You gain resistance to Bludgeoning damage. "},
+		{min:151, max:154, name:"Khaydarin", benefit:"You gain resistance to Piercing damage. "},
+		{min:155, max:158, name:"Duralumin", benefit:"You gain resistance to Slashing damage. "},
+		{min:159, max:161, name:"Black", benefit:"You gain resistance to Acid damage. "},
+		{min:162, max:165, name:"White", benefit:"You gain resistance to Cold damage. "},
+		{min:166, max:169, name:"Red", benefit:"You gain resistance to Fire damage. "},
+		{min:170, max:173, name:"Kyber", benefit:"You gain resistance to Force damage. "},
+		{min:174, max:177, name:"Blue", benefit:"You gain resistance to Lightning damage. "},
+		{min:178, max:181, name:"Onyx", benefit:"You gain resistance to Necrotic damage. "},
+		{min:182, max:185, name:"Green", benefit:"You gain resistance to Poison damage. "},
+		{min:186, max:188, name:"Gemmed", benefit:"You gain resistance to Psychic damage. "},
+		{min:189, max:191, name:"Astral", benefit:"You gain resistance to Radiant damage. "},
+		{min:192, max:194, name:"Purple", benefit:"You gain resistance to Thunder damage. "},
+		{min:195, max:203, name:"Holy", benefit:"When a non-living enemy attacks you, increase your AC by 2."},
+		{min:204, max:212, name:"Wicked", benefit:"When a living enemy attacks you, increase your AC by 2."},
+		{min:213, max:221, name:"Buttressed", benefit:"Your AC against ranged attacks is increased by 2.  "},
+		{min:222, max:231, name:"Unseen", benefit:"While wearing this item, you are invisible to creatures more than 30 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  "},
+		{min:232, max:241, name:"Stalking", benefit:"While wearing this item, you can choose to become invisible at the start of your turn. When you perform any action, bonus action, or reaction, you become visible again.   "},
+		{min:242, max:261, name:"Exalted", benefit:"You gain a +2 bonus to your AC. "},
+		{min:262, max:277, name:"Godly", benefit:"When a non-living enemy attacks you, increase your AC by 3."},
+		{min:278, max:293, name:"Desecrated", benefit:"When a living enemy attacks you, increase your AC by 3."},
+		{min:294, max:309, name:"Bastioned", benefit:"Your AC against ranged attacks is increased by 3.  "},
+		{min:310, max:325, name:"Vulpine", benefit:"When you take damage from a weapon attack or spell, you regain 1d4+1 Spell Points.  "},
+		{min:326, max:341, name:"Corvine", benefit:"When you take damage from a weapon attack or spell, you regain 1d6+1 Spell Points.  "},
+		{min:342, max:357, name:"Hidden", benefit:"While wearing this item, you are invisible to creatures more than 20 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  "},
+		{min:358, max:383, name:"Triumphant", benefit:"You gain a +3 bonus to your AC. "},
+		{min:384, max:405, name:"Veiled", benefit:"While wearing this item, you are invisible to creatures more than 10 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  "},
+		{min:406, max:421, name:"Newt's", benefit:"You gain 2 spell points that are regained after a long rest. "},
+		{min:422, max:435, name:"Lizard's", benefit:"You gain 3 spell points that are regained after a long rest. "},
+		{min:436, max:455, name:"Snake's", benefit:"You gain 5 spell points that are regained after a long rest. "},
+		{min:456, max:473, name:"Crocodile's", benefit:"You gain 6 spell points that are regained after a long rest. "},
+		{min:474, max:489, name:"Serpent's", benefit:"You gain 7 spell points that are regained after a long rest. "},
+		{min:490, max:509, name:"Granite", benefit:"When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest."},
+		{min:510, max:525, name:"Pyrite", benefit:"When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 3. You can change the feature after a long rest."},
+		{min:526, max:549, name:"Cobalt", benefit:"When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 1. You can change the feature after a long rest."},
+		{min:550, max:573, name:"Viper's", benefit:"You gain 9 spell points that are regained after a long rest. "},
+		{min:574, max:595, name:"Basilisk's", benefit:"You gain 10 spell points that are regained after a long rest. "},
+		{min:596, max:619, name:"Opal", benefit:"When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest."},
+		{min:620, max:641, name:"Azure", benefit:"When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest."},
+		{min:642, max:661, name:"Lapis", benefit:"When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 2. You can change these features after a long rest."},
+		{min:662, max:679, name:"Diamond", benefit:"When you get this item, choose 2 class features that recharge after a long rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest."},
+		{min:680, max:707, name:"Wyrm's", benefit:"You gain 11 spell points that are regained after a long rest. "},
+		{min:708, max:733, name:"Hydra's", benefit:"You gain 13 spell points that are regained after a long rest. "},
+		{min:734, max:745, name:"Bronze", benefit:"You gain a +1 to attack rolls."},
+		{min:746, max:757, name:"Iron", benefit:"You gain a +1 to damage rolls."},
+		{min:758, max:770, name:"+1", benefit:"You gain a +1 to attack and damage rolls."},
+		{min:771, max:780, name:"Pewter", benefit:"You gain a +2 to attack rolls."},
+		{min:781, max:790, name:"Steel", benefit:"You gain a +2 to damage rolls."},
+		{min:791, max:803, name:"Deadly", benefit:"On a d20 weapon attack roll of 20, you can add one additional weapon damage die."},
+		{min:804, max:814, name:"Vicious", benefit:"On a d20 weapon attack roll of 19-20, you can add one additional weapon damage die."},
+		{min:815, max:823, name:"Savage", benefit:"On a d20 weapon attack roll of 18-20, you can add one additional weapon damage die."},
+		{min:824, max:830, name:"Vitriolic", benefit:"This weapon additionally deals 1d6 extra Acid damage."},
+		{min:831, max:837, name:"Frozen", benefit:"This weapon additionally deals 1d6 extra Cold damage."},
+		{min:838, max:844, name:"Flaming", benefit:"This weapon additionally deals 1d6 extra Fire damage."},
+		{min:845, max:851, name:"Forceful", benefit:"This weapon additionally deals 1d6 extra Force damage."},
+		{min:852, max:858, name:"Shocking", benefit:"This weapon additionally deals 1d6 extra Lightning damage."},
+		{min:859, max:865, name:"Decaying", benefit:"This weapon additionally deals 1d6 extra Necrotic damage."},
+		{min:866, max:872, name:"Poisoned", benefit:"This weapon additionally deals 1d6 extra Poison damage."},
+		{min:873, max:879, name:"Tormenting", benefit:"This weapon additionally deals 1d6 extra Psychic damage."},
+		{min:880, max:886, name:"Radiant", benefit:"This weapon additionally deals 1d6 extra Radiant damage."},
+		{min:887, max:893, name:"Booming", benefit:"This weapon additionally deals 1d6 extra Thunder damage."},
+		{min:894, max:905, name:"Jagged", benefit:"When you deal critical damage, you can add 1d6 when determining the extra damage. "},
+		{min:906, max:914, name:"Viridian", benefit:"When you hit a creature with this weapon, its AC is reduced by 1, constitution save ends. This effect does not stack. "},
+		{min:915, max:923, name:"Crimson", benefit:"When you hit a creature with this weapon, its attack bonus is reduced by 1, constitution save ends. This effect does not stack. "},
+		{min:924, max:935, name:"Crusader's", benefit:"You gain 1 bonus damage for every creature adjacent to you."},
+		{min:936, max:947, name:"Berserker's", benefit:"You gain 1 bonus damage for every creature adjacent to the target."},
+		{min:948, max:959, name:"Exploding", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again for bonus damage. This effect can occur multiple times."},
+		{min:960, max:973, name:"Erupting", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is fire damage. This effect can occur multiple times."},
+		{min:974, max:987, name:"Rupturing", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is force damage. This effect can occur multiple times."},
+		{min:988, max:1001, name:"Detonating", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is thunder damage.  This effect can occur multiple times."},
+		{min:1002, max:1011, name:"Howling", benefit:"When you hit a creature with a melee attack, they must make a DC 14 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you."},
+		{min:1012, max:1030, name:"+2", benefit:"You gain a +2 to attack and damage rolls."},
+		{min:1031, max:1049, name:"Gold", benefit:"You gain a +3 to attack rolls."},
+		{min:1050, max:1068, name:"Platinum", benefit:"You gain a +3 to damage rolls."},
+		{min:1069, max:1085, name:"Adamantine", benefit:"Your critical hit range is increased by 1."},
+		{min:1086, max:1100, name:"Ruthless", benefit:"On a d20 weapon attack roll of 17-20, you can add one additional weapon damage die."},
+		{min:1101, max:1115, name:"Merciless", benefit:"On a d20 weapon attack roll of 16-20, you can add one additional weapon damage die."},
+		{min:1116, max:1132, name:"Corrosive", benefit:"This weapon additionally deals 1d8 extra Acid damage."},
+		{min:1133, max:1149, name:"Arctic", benefit:"This weapon additionally deals 1d8 extra Cold damage."},
+		{min:1150, max:1166, name:"Ashen", benefit:"This weapon additionally deals 1d8 extra Fire damage."},
+		{min:1167, max:1183, name:"Potent", benefit:"This weapon additionally deals 1d8 extra Force damage."},
+		{min:1184, max:1200, name:"Electric", benefit:"This weapon additionally deals 1d8 extra Lightning damage."},
+		{min:1201, max:1217, name:"Rotting", benefit:"This weapon additionally deals 1d8 extra Necrotic damage."},
+		{min:1218, max:1234, name:"Venomous", benefit:"This weapon additionally deals 1d8 extra Poison damage."},
+		{min:1235, max:1251, name:"Traumatic", benefit:"This weapon additionally deals 1d8 extra Psychic damage."},
+		{min:1252, max:1268, name:"Luminous", benefit:"This weapon additionally deals 1d8 extra Radiant damage."},
+		{min:1269, max:1285, name:"Crashing", benefit:"This weapon additionally deals 1d8 extra Thunder damage."},
+		{min:1286, max:1304, name:"Heavy", benefit:"When you deal critical damage, you can add 1d10 when determining the extra damage. "},
+		{min:1305, max:1323, name:"Brutal", benefit:"When you deal critical damage, you can add 2d6 when determining the extra damage. "},
+		{min:1324, max:1340, name:"Beryl", benefit:"When you hit a creature with this weapon, its AC is reduced by 2, constitution save ends. This effect does not stack. "},
+		{min:1341, max:1357, name:"Scarlet", benefit:"When you hit a creature with this weapon, its attack bonus is reduced by 2, constitution save ends. This effect does not stack. "},
+		{min:1358, max:1376, name:"Wailing", benefit:"When you hit a creature with a melee attack, they must make a DC 16 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you."},
+		{min:1377, max:1393, name:"Dreadful", benefit:"After hitting a creature with this weapon, the target is frightened of you until the end of its next turn.  "},
+		{min:1394, max:1412, name:"Blighted", benefit:"After hitting a creature with this weapon, the target is poisoned until the end of its next turn.  "},
+		{min:1413, max:1427, name:"Exhausting", benefit:"After hitting a creature with this weapon, the target is under the effect of the Slow spell  until the end of its next turn. "},
+		{min:1428, max:1442, name:"Chaotic", benefit:"After hitting a creature with this weapon, the target uses its action at the start of its turn to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target can act normally  "},
+		{min:1443, max:1466, name:"+3", benefit:"You gain a +3 to attack and damage rolls."},
+		{min:1467, max:1492, name:"Mithril", benefit:"Your critical hit range is increased by 2."},
+		{min:1493, max:1510, name:"Caustic", benefit:"This weapon additionally deals 1d10 extra Acid damage."},
+		{min:1511, max:1528, name:"Glacial", benefit:"This weapon additionally deals 1d10 extra Cold damage."},
+		{min:1529, max:1546, name:"Blazing", benefit:"This weapon additionally deals 1d10 extra Fire damage."},
+		{min:1547, max:1564, name:"Mystic", benefit:"This weapon additionally deals 1d10 extra Force damage."},
+		{min:1565, max:1582, name:"Stormy", benefit:"This weapon additionally deals 1d10 extra Lightning damage."},
+		{min:1583, max:1600, name:"Deathly", benefit:"This weapon additionally deals 1d10 extra Necrotic damage."},
+		{min:1601, max:1618, name:"Toxic", benefit:"This weapon additionally deals 1d10 extra Poison damage."},
+		{min:1619, max:1636, name:"Harrowing", benefit:"This weapon additionally deals 1d10 extra Psychic damage."},
+		{min:1637, max:1654, name:"Hallowed", benefit:"This weapon additionally deals 1d10 extra Radiant damage."},
+		{min:1655, max:1672, name:"Roaring", benefit:"This weapon additionally deals 1d10 extra Thunder damage."},
+		{min:1673, max:1695, name:"Massive", benefit:"When you deal critical damage, you can add 2d10 when determining the extra damage. "},
+		{min:1696, max:1722, name:"Templar's", benefit:"You gain 2 bonus damage for every creature adjacent to you."},
+		{min:1723, max:1749, name:"Fanatic's", benefit:"You gain 2 bonus damage for every creature adjacent to the target."},
+		{min:1750, max:1770, name:"Obscurring", benefit:"After hitting a creature with this weapon, the target is blinded until the end of its next turn.  "},
+		{min:1771, max:1792, name:"Nightmare", benefit:"After hitting a creature with this weapon, the target is frightened of you, save ends.  "},
+		{min:1793, max:1816, name:"Pestilent", benefit:"After hitting a creature with this weapon, the target is poisoned, save ends.  "},
+		{min:1817, max:1838, name:"Discordant", benefit:"After hitting a creature with this weapon, the target uses its action to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target does nothing that turn.  "},
+		{min:1839, max:1859, name:"Phasing", benefit:"After hitting a creature with this weapon,  the target shifts to the ethereal plane until the end of its next turn.   "},
+		{min:1860, max:1892, name:"Orichalcum", benefit:"Your critical hit range is increased by 3."},
+		{min:1893, max:1919, name:"Crippling", benefit:"After hitting a creature with this weapon, the target is incapacitated until the end of its next turn.  "},
+		{min:1920, max:1946, name:"Blinding", benefit:"After hitting a creature with this weapon, the target is blinded, save ends.  "},
+		{min:1947, max:1973, name:"Subjugating", benefit:"After hitting a creature with this weapon, the target is incapacitated, save ends.  "},
+		{min:1974, max:2000, name:"Overwhelming", benefit:"After hitting a creature with this weapon, the target is under the effect of the Slow spell  save ends. "}
+   ];
+
+const suffixTable = [
+		{min:1, max:11, name:"of Brawn", benefit:"You gain a +1 bonus to your Strength ability score."},
+		{min:12, max:22, name:"of Nimbleness", benefit:"You gain a +1 bonus to your Dexterity ability score."},
+		{min:23, max:33, name:"of Stamina", benefit:"You gain a +1 bonus to your Constitution ability score."},
+		{min:34, max:44, name:"of Wit", benefit:"You gain a +1 bonus to your Intelligence ability score."},
+		{min:45, max:55, name:"of Reason", benefit:"You gain a +1 bonus to your Wisdom ability score."},
+		{min:56, max:66, name:"of Appeal", benefit:"You gain a +1 bonus to your Charisma ability score."},
+		{min:67, max:72, name:"of the Boar", benefit:"You gain a +1 bonus to your Strength saving throws."},
+		{min:73, max:78, name:"of the Ram", benefit:"You gain a +1 bonus to your Dexterity saving throws."},
+		{min:79, max:84, name:"of the Cat", benefit:"You gain a +1 bonus to your Constitution saving throws."},
+		{min:85, max:90, name:"of the Raccoon ", benefit:"You gain a +1 bonus to your Intelligence saving throws."},
+		{min:91, max:96, name:"of the Beetle", benefit:"You gain a +1 bonus to your Wisdom saving throws."},
+		{min:97, max:102, name:"of the Badger", benefit:"You gain a +1 bonus to your Charisma saving throws."},
+		{min:103, max:108, name:"of the Rat", benefit:"You gain a +1 bonus to your Death saving throws."},
+		{min:109, max:112, name:"of the Wolf", benefit:"You gain a +2 bonus to your Charisma saving throws."},
+		{min:113, max:116, name:"of the Owl", benefit:"You gain a +2 bonus to your Strength saving throws."},
+		{min:117, max:120, name:"of the Tortoise", benefit:"You gain a +2 bonus to your Dexterity saving throws."},
+		{min:121, max:124, name:"of the Dove", benefit:"You gain a +2 bonus to your Constitution saving throws."},
+		{min:125, max:128, name:"of the Swan", benefit:"You gain a +2 bonus to your Intelligence saving throws."},
+		{min:129, max:132, name:"of the Hyena", benefit:"You gain a +2 bonus to your Wisdom saving throws."},
+		{min:133, max:136, name:"of the Possum", benefit:"You gain a +2 bonus to your Death saving throws."},
+		{min:137, max:154, name:"of the Warrior", benefit:"You gain 1 additional Armor Point. "},
+		{min:155, max:168, name:"of the Soldier", benefit:"You gain 3 additional Armor Points. "},
+		{min:169, max:181, name:"of Sparrow", benefit:"You maximum hit point value is increased by 2.  "},
+		{min:182, max:192, name:"of Kestrel", benefit:"You maximum hit point value is increased by 5.  "},
+		{min:193, max:198, name:"of the Adept", benefit:"You gain 1 hit dice that is the same size as your highest level class. "},
+		{min:199, max:207, name:"of Veins", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+3 hit points."},
+		{min:208, max:213, name:"of the Moon", benefit:"You gain a number of extra spell points, equal to your level divided by 2, rounded down. "},
+		{min:214, max:219, name:"of the Giant", benefit:"You gain a number of armor points, equal to your level divided by 2, rounded down. "},
+		{min:220, max:222, name:"of Glowing", benefit:"While wearing this item, light sources you carry shed 5 feet more bright and dim light. "},
+		{min:223, max:225, name:"of Gleaming", benefit:"While wearing this item, light sources you carry shed 10 feet more bright and dim light. "},
+		{min:226, max:231, name:"of Brambles", benefit:"When you take damage from a melee attack, the attacker takes 1d4 piercing damage. "},
+		{min:232, max:237, name:"of Rapport", benefit:"While wearing this item, any allies within 5 feet of you have a +1 bonus to saving throws."},
+		{min:238, max:243, name:"of Mana Shield", benefit:"When you would take damage from any source, you can expend  up to 2 spell points and reduce the damage by  1d12 for each point spent."},
+		{min:244, max:255, name:"of Strength", benefit:"You gain a +2 bonus to your Strength ability score."},
+		{min:256, max:267, name:"of Dexterity", benefit:"You gain a +2 bonus to your Dexterity ability score."},
+		{min:268, max:279, name:"of Constitution", benefit:"You gain a +2 bonus to your Constitution ability score."},
+		{min:280, max:291, name:"of Intelligence", benefit:"You gain a +2 bonus to your Intelligence ability score."},
+		{min:292, max:303, name:"of Wisdom", benefit:"You gain a +2 bonus to your Wisdom ability score."},
+		{min:304, max:315, name:"of Charisma", benefit:"You gain a +2 bonus to your Charisma ability score."},
+		{min:316, max:321, name:"of the Paladin", benefit:"You gain a +1 bonus to your Strength and Charisma ability scores."},
+		{min:322, max:327, name:"of the Cleric", benefit:"You gain a +1 bonus to your Strength and Wisdom ability scores."},
+		{min:328, max:333, name:"of the Warlock", benefit:"You gain a +1 bonus to your Dexterity and Charisma ability scores."},
+		{min:334, max:339, name:"of the Rogue", benefit:"You gain a +1 bonus to your Dexterity and Intelligence ability scores."},
+		{min:340, max:345, name:"of the Monk", benefit:"You gain a +1 bonus to your Dexterity and Wisdom ability scores."},
+		{min:346, max:351, name:"of the Psion", benefit:"You gain a +1 bonus to your Intelligence and Wisdom ability scores."},
+		{min:352, max:356, name:"of the Gorilla", benefit:"You gain a +3 bonus to your Strength saving throws."},
+		{min:357, max:361, name:"of the Hawk", benefit:"You gain a +3 bonus to your Dexterity saving throws."},
+		{min:362, max:366, name:"of the Ox", benefit:"You gain a +3 bonus to your Constitution saving throws."},
+		{min:367, max:371, name:"of the Raven", benefit:"You gain a +3 bonus to your Intelligence saving throws."},
+		{min:372, max:376, name:"of the Stag", benefit:"You gain a +3 bonus to your Wisdom saving throws."},
+		{min:377, max:381, name:"of the Peacock", benefit:"You gain a +3 bonus to your Charisma saving throws."},
+		{min:382, max:387, name:"of the Vulture", benefit:"You gain a +3 bonus to your Death saving throws."},
+		{min:388, max:401, name:"of the Knight", benefit:"You gain 5 additional Armor Points."},
+		{min:402, max:414, name:"of Falcon", benefit:"You maximum hit point value is increased by 8."},
+		{min:415, max:425, name:"of Eagle", benefit:"You maximum hit point value is increased by 10."},
+		{min:426, max:434, name:"of the Veteran", benefit:"You gain 2 hit dice that are the same size as your highest level class."},
+		{min:435, max:444, name:"of Health", benefit:"While you are bloodied and still have hit points, you regain 1d4hit points at the start of your turn."},
+		{min:445, max:453, name:"of Life", benefit:"You gain a bonus to your maximum hit point value, equal to your level."},
+		{min:454, max:461, name:"of Blood", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+6 hit points."},
+		{min:462, max:468, name:"of Heart", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+9 hit points."},
+		{min:469, max:475, name:"of Shining", benefit:"While wearing this item, light sources you carry shed 15 feet more bright and dim light. "},
+		{min:476, max:485, name:"of Thorns", benefit:"When you take damage from a melee attack, the attacker takes 2d4 piercing damage. "},
+		{min:486, max:493, name:"of Unity", benefit:"While wearing this item, any allies within 5 feet of you have a +4 bonus to saving throws."},
+		{min:494, max:502, name:"of Chance", benefit:"Once per loot session, you can roll a d8. On a 7 or higher, you gain one additional loot drop.  "},
+		{min:503, max:506, name:"of Athletics", benefit:"You gain advantage on Athletics skill checks.  "},
+		{min:507, max:510, name:"of Acrobatics", benefit:"You gain advantage on Acrobatics skill checks.  "},
+		{min:511, max:514, name:"of the Theif", benefit:"You gain advantage on Sleight of Hand skill checks.  "},
+		{min:515, max:518, name:"of Stealth", benefit:"You gain advantage on Stealth skill checks.  "},
+		{min:519, max:522, name:"of Arcana", benefit:"You gain advantage on Arcana skill checks.  "},
+		{min:523, max:526, name:"of History", benefit:"You gain advantage on History skill checks.  "},
+		{min:527, max:530, name:"of Investigation", benefit:"You gain advantage on Investigation skill checks.  "},
+		{min:531, max:534, name:"of Nature", benefit:"You gain advantage on Nature skill checks.  "},
+		{min:535, max:538, name:"of Religion", benefit:"You gain advantage on Religion skill checks.  "},
+		{min:539, max:542, name:"of Animal Handling", benefit:"You gain advantage on Animal Handling skill checks.  "},
+		{min:543, max:546, name:"of Insight", benefit:"You gain advantage on Insight skill checks.  "},
+		{min:547, max:550, name:"of Medicine", benefit:"You gain advantage on Medicine skill checks.  "},
+		{min:551, max:554, name:"of Perception", benefit:"You gain advantage on Perception skill checks.  "},
+		{min:555, max:558, name:"of Survival", benefit:"You gain advantage on Survival skill checks.  "},
+		{min:559, max:562, name:"of Deception", benefit:"You gain advantage on Deception skill checks.  "},
+		{min:563, max:566, name:"of Intimidation", benefit:"You gain advantage on Intimidation skill checks.  "},
+		{min:567, max:570, name:"of Performance", benefit:"You gain advantage on Performance skill checks.  "},
+		{min:571, max:574, name:"of Persuasion", benefit:"You gain advantage on Persuasion skill checks.  "},
+		{min:575, max:584, name:"of Soul Ward", benefit:"When you would take damage from any source, you can expend  up to 4 spell points and reduce the damage by  1d6 for each point spent."},
+		{min:585, max:594, name:"of Arcane Aegis", benefit:"When you would take damage from any source, you can expend  up to 6 spell points and reduce the damage by  1d4 for each point spent."},
+		{min:595, max:606, name:"of Might", benefit:"You gain a +3 bonus to your Strength ability score."},
+		{min:607, max:618, name:"of Finesse", benefit:"You gain a +3 bonus to your Dexterity ability score."},
+		{min:619, max:630, name:"of Mettle", benefit:"You gain a +3 bonus to your Constitution ability score."},
+		{min:631, max:642, name:"of Brilliance", benefit:"You gain a +3 bonus to your Intelligence ability score."},
+		{min:643, max:654, name:"of Judgement", benefit:"You gain a +3 bonus to your Wisdom ability score."},
+		{min:655, max:666, name:"of Allure", benefit:"You gain a +3 bonus to your Charisma ability score."},
+		{min:667, max:677, name:"of the Oathkeeper", benefit:"You gain a +2 bonus to your Strength and Charisma ability scores."},
+		{min:678, max:688, name:"of the Priest", benefit:"You gain a +2 bonus to your Strength and Wisdom ability scores."},
+		{min:689, max:699, name:"of the Hexblade", benefit:"You gain a +2 bonus to your Dexterity and Charisma ability scores."},
+		{min:700, max:710, name:"of the Trickster", benefit:"You gain a +2 bonus to your Dexterity and Intelligence ability scores."},
+		{min:711, max:721, name:"of the Ways", benefit:"You gain a +2 bonus to your Dexterity and Wisdom ability scores."},
+		{min:722, max:732, name:"of the Noble", benefit:"You gain a +2 bonus to your Intelligence and Wisdom ability scores."},
+		{min:733, max:742, name:"of of the Stars", benefit:"You gain a +1 bonus to all of your ability scores."},
+		{min:743, max:757, name:"of the Champion", benefit:"You gain 8 additional Armor Points. "},
+		{min:758, max:775, name:"of Condor", benefit:"You maximum hit point value is increased by 13.  "},
+		{min:776, max:791, name:"of Mammoth", benefit:"You maximum hit point value is increased by 15.  "},
+		{min:792, max:803, name:"of the Expert", benefit:"You gain 3 hit dice that are the same size as your highest level class. "},
+		{min:804, max:815, name:"of Sinew", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+5 hit points."},
+		{min:816, max:827, name:"of Regeneration", benefit:"While you are bloodied and still have hit points, you regain 1d8hit points at the start of your turn. "},
+		{min:828, max:844, name:"of the Sun", benefit:"You gain a number of extra spell points, equal to your level. "},
+		{min:845, max:859, name:"of the Titan", benefit:"You gain a number of armor points, equal to your level. "},
+		{min:860, max:878, name:"of Barbs", benefit:"When you take damage from a melee attack, the attacker takes 3d4 piercing damage. "},
+		{min:879, max:895, name:"of Harmony", benefit:"While wearing this item, any allies within 10 feet of you have a +2 bonus to saving throws."},
+		{min:896, max:911, name:"of Wealth", benefit:"Once per loot session, you can roll a d8. On a 5 or higher, you gain one additional loot drop.  "},
+		{min:912, max:928, name:"of Power", benefit:"You gain a +4 bonus to your Strength ability score."},
+		{min:929, max:945, name:"of Precision", benefit:"You gain a +4 bonus to your Dexterity ability score."},
+		{min:946, max:962, name:"of Vigor", benefit:"You gain a +4 bonus to your Constitution ability score."},
+		{min:963, max:979, name:"of Wizardry", benefit:"You gain a +4 bonus to your Intelligence ability score."},
+		{min:980, max:996, name:"of Justice", benefit:"You gain a +4 bonus to your Wisdom ability score."},
+		{min:997, max:1013, name:"of Sorcery", benefit:"You gain a +4 bonus to your Charisma ability score."},
+		{min:1014, max:1028, name:"of of the Zodiac", benefit:"You gain a +2 bonus to all of your ability scores."},
+		{min:1029, max:1051, name:"of the Duke", benefit:"You gain 10 additional Armor Points. "},
+		{min:1052, max:1072, name:"of the King", benefit:"You gain 12 additional Armor Points. "},
+		{min:1073, max:1093, name:"of Whale", benefit:"You maximum hit point value is increased by 20.  "},
+		{min:1094, max:1112, name:"of Colossus", benefit:"You maximum hit point value is increased by 25.  "},
+		{min:1113, max:1136, name:"of the Master", benefit:"You gain 4 hit dice that are the same size as your highest level class. "},
+		{min:1137, max:1159, name:"of Bone", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+10 hit points."},
+		{min:1160, max:1181, name:"of Marrow", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+15 hit points."},
+		{min:1182, max:1201, name:"of Regrowth", benefit:"While you are bloodied and still have hit points, you regain 1d12hit points at the start of your turn. "},
+		{min:1202, max:1226, name:"of Vitality", benefit:"You gain a bonus to your maximum hit point value, equal to twice your level. "},
+		{min:1227, max:1251, name:"of Spikes", benefit:"When you take damage from a melee attack, the attacker takes 4d4 piercing damage. "},
+		{min:1252, max:1276, name:"of Kin", benefit:"While wearing this item, any allies within 20 feet of you have a +2 bonus to saving throws."},
+		{min:1277, max:1301, name:"of Fortune", benefit:"Once per loot session, you can roll a d8. On a 3 or higher, you gain one additional loot drop.  "},
+		{min:1302, max:1305, name:"of Shattering", benefit:"After you take Bludgeoning damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage."},
+		{min:1306, max:1309, name:"of Puncturing", benefit:"After you take Piercing damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage."},
+		{min:1310, max:1313, name:"of Rending", benefit:"After you take Slashing damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage."},
+		{min:1314, max:1317, name:"of Acid", benefit:"After you take Acid damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Acid damage."},
+		{min:1318, max:1321, name:"of Frost", benefit:"After you take Cold damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Cold damage."},
+		{min:1322, max:1325, name:"of Fire", benefit:"After you take Fire damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Fire damage."},
+		{min:1326, max:1329, name:"of Magic", benefit:"After you take Force damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Force damage."},
+		{min:1330, max:1333, name:"of Lightning", benefit:"After you take Lightning damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Lightning damage."},
+		{min:1334, max:1337, name:"of Shadow", benefit:"After you take Necrotic damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Necrotic damage."},
+		{min:1338, max:1341, name:"of Sickness", benefit:"After you take Poison damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Poison damage."},
+		{min:1342, max:1345, name:"of the Mind", benefit:"After you take Psychic damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Psychic damage."},
+		{min:1346, max:1349, name:"of Light", benefit:"After you take Radiant damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Radiant damage."},
+		{min:1350, max:1353, name:"of Thunder", benefit:"After you take Thunder damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Thunder damage."},
+		{min:1354, max:1362, name:"of the Wyvern", benefit:"Your Proficiency Bonus increases by 1. This effect can only be applied from one item. "},
+		{min:1363, max:1369, name:"of Readiness", benefit:"You can add 1d4 to initiative rolls.  "},
+		{min:1370, max:1375, name:"of Apetite", benefit:"When you cast a spell using spell points, roll a d20. On a 13 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. "},
+		{min:1376, max:1381, name:"of Study", benefit:"When first equipping this item, choose two 1st-level spells you have access to. These spells do not count against your total number of spells known or prepared. "},
+		{min:1382, max:1387, name:"of Training", benefit:"When first equipping this item, choose two 2nd-level spells you have access to. These spells do not count against your total number of spells known or prepared. "},
+		{min:1388, max:1396, name:"of Instinct", benefit:"This item does not have a proficiency requirement to gain its mastery bonus."},
+		{min:1397, max:1405, name:"of Ease", benefit:"This item does not have a strength requirement to gain its mastery bonus."},
+		{min:1406, max:1414, name:"of Simplicity", benefit:"This item does not have a dexterity requirement to gain its mastery bonus."},
+		{min:1415, max:1422, name:"of the Drake", benefit:"Your Proficiency Bonus increases by 2. This effect can only be applied from one item. "},
+		{min:1423, max:1432, name:"of the Leech", benefit:"When you deal damage with a weapon attack, you regain 1d4 hit points. "},
+		{min:1433, max:1440, name:"of the Bat", benefit:"When you deal damage with a weapon attack, you regain 1d8 hit points. "},
+		{min:1441, max:1450, name:"of the Claw", benefit:"When you deal damage with a weapon attack, you regain 1 spell points. "},
+		{min:1451, max:1458, name:"of the Fang", benefit:"When you deal damage with a weapon attack, you regain 2 spell points. "},
+		{min:1459, max:1469, name:"of the Apprentice", benefit:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead.    "},
+		{min:1470, max:1478, name:"of Alacrity", benefit:"You can add 1d8 to initiative rolls.  "},
+		{min:1479, max:1487, name:"of Vengeance", benefit:"On your turn, you can use your move action to instead make a weapon attack.   "},
+		{min:1488, max:1496, name:"of Quickness", benefit:"On your turn, you can use your move action to instead cast a cantrip.   "},
+		{min:1497, max:1505, name:"of Hunger", benefit:"When you cast a spell using spell points, roll a d20. On a 9 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. "},
+		{min:1506, max:1514, name:"of Mnemonics", benefit:"If you have the spellcasting class feature, you can add your proficiency bonus to the number of spells you know or can prepare.   "},
+		{min:1515, max:1523, name:"of Research", benefit:"When first equipping this item, choose two 3rd-level spells you have access to. These spells do not count against your total number of spells known or prepared. "},
+		{min:1524, max:1532, name:"of Lore", benefit:"When first equipping this item, choose one 4th-level spell you have access to. This spells do not count against your total number of spells known or prepared. "},
+		{min:1533, max:1544, name:"of the Dragon", benefit:"Your Proficiency Bonus increases by 3. This effect can only be applied from one item. "},
+		{min:1545, max:1556, name:"of the Vampire", benefit:"When you deal damage with a weapon attack, you regain 1d12 hit points. "},
+		{min:1557, max:1568, name:"of the Talon", benefit:"When you deal damage with a weapon attack, you regain 3 spell points. "},
+		{min:1569, max:1580, name:"of the Magus", benefit:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead. When you use this feature, roll a d6. On a 6, this feature regains its use.   "},
+		{min:1581, max:1592, name:"of Initiative", benefit:"You can add 1d12 to initiative rolls.  "},
+		{min:1593, max:1604, name:"of Zeal", benefit:"On your turn, you can use your move action to instead take the attack action.   "},
+		{min:1605, max:1616, name:"of Haste", benefit:"On your turn, you can use your move action to instead cast a spell.   "},
+		{min:1617, max:1628, name:"of Craving", benefit:"When you cast a spell using spell points, roll a d20. On a 5 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. "},
+		{min:1629, max:1640, name:"of Enlightenment", benefit:"When first equipping this item, choose one 5th-level spell you have access to. This spells do not count against your total number of spells known or prepared. "},
+		{min:1641, max:1652, name:"of the Leopard", benefit:"You gain a damage bonus to your weapon attacks equal to your level divided by 3, rounded down. "},
+		{min:1653, max:1664, name:"of the Lion", benefit:"You gain a damage bonus to your spells equal to your level divided by 3, rounded down. "},
+		{min:1665, max:1676, name:"of Measure", benefit:"When you roll damage for a weapon attack, you can reroll any 1's on the damage dice. You must use the second result. "},
+		{min:1677, max:1688, name:"of Tempo", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than your level, you may make one additional attack. "},
+		{min:1689, max:1700, name:"of Suppression", benefit:"When you hit a creature with this weapon, its speed is reduced by 10 feet until the start of your next turn."},
+		{min:1701, max:1712, name:"of the Bear", benefit:"When you hit a creature with a melee attack, they must make a DC 15 Strength saving throw. On a failure, the creature is pushed 5 feet."},
+		{min:1713, max:1724, name:"of Fatigue", benefit:"After hitting a creature with this weapon, they cannot make any reactions until the end of the turn.  "},
+		{min:1725, max:1736, name:"of Binding", benefit:"After hitting a creature with this weapon, they cannot make any reactions until the end of their next turn.  "},
+		{min:1737, max:1754, name:"of the Panther", benefit:"You gain a damage bonus to your weapon attacks equal to your level divided by 2, rounded down. "},
+		{min:1755, max:1772, name:"of the Tiger", benefit:"You gain a damage bonus to your spells equal to your level divided by 2, rounded down. "},
+		{min:1773, max:1790, name:"of Worth", benefit:"When you roll damage for a weapon attack, you can reroll any 2's on the damage dice. You must use the second result. "},
+		{min:1791, max:1808, name:"of Excellence", benefit:"When you deal damage with a spell, you can reroll any 1's on the damage dice. You must use the second result. "},
+		{min:1809, max:1826, name:"of Momentum", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 5 plus your level, you may make one additional attack. "},
+		{min:1827, max:1844, name:"of Impairment", benefit:"When you hit a creature with this weapon, its speed is reduced by half until the start of your next turn."},
+		{min:1845, max:1862, name:"of the Grizzly", benefit:"When you hit a creature with a melee attack, they must make a DC 17 Strength saving throw. On a failure, the creature is pushed 10 feet."},
+		{min:1863, max:1880, name:"of Greed", benefit:"When damage is rolled after hitting with this weapon, roll a d8. On an 8, maximize all damage dice. On 3-7, damage is calculated as usual. On a 1 or 2, the attack deals 0 damage."},
+		{min:1881, max:1904, name:"of Supremacy", benefit:"When you deal damage with a spell, you can reroll any 2's on the damage dice. You must use the second result. "},
+		{min:1905, max:1928, name:"of Velocity", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 10 plus your level, you may make one additional attack. "},
+		{min:1929, max:1952, name:"of Containment", benefit:"When you hit a creature with this weapon, its speed is reduced to 0 until the start of your next turn."},
+		{min:1953, max:1976, name:"of Avarice", benefit:"When damage is rolled after hitting with this weapon, roll a d4. On a 4, maximize all damage dice. On 2-3, damage is calculated as usual. On a 1, the attack deals 0 damage."},
+		{min:1977, max:2000, name:"of Maiming", benefit:"After hitting a creature with this weapon, they cannot make any reactions for 1d4 turns.  "}
+    ];
+
+    // ---------- Helpers ----------
+function pickFromTable(table, roll) {
+      return table.find(e => roll >= e.min && roll <= e.max) || null;
+    }
+
+    // Roll within ALLOWED ranges; re-roll if excluded. Safety cap to avoid infinite loops.
+function rollInAllowedRanges(allowed) {
+      let attempts = 0;
+      while (attempts++ < 500) {
+        const r = rollDice(1, 2000);
+        for (const rng of allowed) {
+          if (r >= rng.min && r <= rng.max) return r;
+        }
+      }
+      return null; // shouldn't happen with valid ranges
+    }
+
+function allowedPrefixRanges(isArmor, tier) {
+			if (isArmor) {
+				if (tier === 1) return [{min:1,max:100},{min:406,max:435}];
+				if (tier === 2) return [{min:1,max:241},{min:406,max:549}];
+				if (tier === 3) return [{min:1,max:357},{min:406,max:679}];
+				if (tier === 4) return [{min:1,max:733}];
+			} else {
+				if (tier === 1) return [{min:406,max:435},{min:734,max:1011}];
+				if (tier === 2) return [{min:406,max:549},{min:734,max:1442}];
+				if (tier === 3) return [{min:406,max:679},{min:734,max:1859}];
+				if (tier === 4) return [{min:406,max:2000}];
+			}
+			return [];
+		}
+
+function allowedSuffixRanges(isArmor, tier) {
+			if (isArmor) {
+				if (tier === 1) return [{min:1,max:243},{min:1305,max:1387}];
+				if (tier === 2) return [{min:1,max:594},{min:1305,max:1532}];
+				if (tier === 3) return [{min:1,max:911},{min:1305,max:1640}];
+				if (tier === 4) return [{min:1,max:1640}];
+			} else {
+				if (tier === 1) return [{min:1302,max:1387},{min:1641,max:1736}];
+				if (tier === 2) return [{min:1302,max:1532},{min:1641,max:1880}];
+				if (tier === 3) return [{min:1302,max:2000}];
+				if (tier === 4) return [{min:1302,max:2000}];
+			}
+			return [];
+		}
+
+function getValidPrefix(isArmor, tier) {
+		const r = rollInAllowedRanges(allowedPrefixRanges(isArmor, tier));
+	return r ? pickFromTable(prefixTable, r) : null;
+		}
+function getValidSuffix(isArmor, tier) {
+    	const r = rollInAllowedRanges(allowedSuffixRanges(isArmor, tier));
+	return r ? pickFromTable(suffixTable, r) : null;
+    }
+
+    // ---------- Loot Pieces ----------
+function rollGold(CL) {
+			const cl = Math.max(1, Math.min(20, parseInt(document.getElementById("cl").value || "1", 10)));
+			const dl = Math.max(1, Math.min(20, parseInt(document.getElementById("dl").value || "1", 10)));
+			const dice = rollDice(1, 20);
+			const multiplier = 1.01 + Math.random() * (1.35 - 1.01);
+			const gold = Math.floor(dice * (cl+dl) * multiplier);
+	return `${gold} gold`;
+}
+
+    function rollPotion(tier) {
+      const dice = tier; // T1=1d10, T2=2d10, T3=3d10, T4=4d10
+      const roll = rollDice(1, (15*tier));
+      const entry = potionTable.find(p => roll >= p.min && roll <= p.max);
+      return `Potion: ${entry ? entry.name : "Unknown"}`;
+    }
+
+// ---------------------
+// Magic Consumable Logic
+// ---------------------
+function rollMagicConsumable(tier) {
+  // Step 1: Spell level selection
+  let baseRoll = 1 + Math.floor((rollDice(1, 100) - 1) * ((tier * 25)) / 100);
+  let tableName;
+
+  if (baseRoll <= 9) tableName = "cantrip";
+  else if (baseRoll <= 19) tableName = "level1";
+  else if (baseRoll <= 29) tableName = "level2";
+  else if (baseRoll <= 39) tableName = "level3";
+  else if (baseRoll <= 49) tableName = "level4";
+  else if (baseRoll <= 59) tableName = "level5";
+  else if (baseRoll <= 69) tableName = "level6";
+  else if (baseRoll <= 79) tableName = "level7";
+  else if (baseRoll <= 89) tableName = "level8";
+  else tableName = "level9";
+
+  // Step 2: Roll spell from that table
+  let table = spellTables[tableName];
+  let spellIndex = rollDice(1, table.length) - 1;
+  let spell = table[spellIndex];
+
+  // Step 3: Book vs Scroll
+  let format = rollDice(1, 20) <= 19 ? "Spell Scroll" : "Spell Book";
+
+  return `${format} of ${spell} ${baseRoll}`;
+}
+
+
+function rollMundaneItem(tier, isArmor) {
+      let roll = 0, item = null;
+      if (isArmor) {
+        if (tier === 1) roll = rollDice(1, 162);
+        else if (tier === 2) roll = rollDice(1, 452);
+        else if (tier === 3) roll = rollDice(1, 842);
+        else roll = rollDice(1, 1000);
+        item = pickFromTable(armorTable, roll);
+      } else {
+        if (tier === 1) roll = rollDice(1, 63);
+        else if (tier === 2) roll = rollDice(1, 369);
+        else if (tier === 3) roll = rollDice(1, 801);
+        else roll = rollDice(1, 1200);
+        item = pickFromTable(weaponTable, roll);
+      }
+      return { roll, item };
+    }
+
+function rollGear(tier, { forceType = null, forceEnchant = null } = {}) {
+      let isArmor = (forceType === 'armor') ? true :
+                    (forceType === 'weapon') ? false :
+                    (rollDice(1,20) <= 10);
+
+      const { item } = rollMundaneItem(tier, isArmor);
+
+      // Determine enchant type
+      let enchantChoice = forceEnchant;
+      if (!enchantChoice) {
+        const e = rollDice(1, 20);
+        if (e >= 1 && e <= 8) enchantChoice = 'mundane';
+        else if (e >= 9 && e <= 13) enchantChoice = 'prefix';
+        else if (e >= 14 && e <= 18) enchantChoice = 'suffix';
+        else enchantChoice = 'both'; // 19–20
+      }
+
+      // Apply exclusions-aware rolls
+      let prefix = null, suffix = null;
+      if (enchantChoice === 'prefix' || enchantChoice === 'both') {
+        prefix = getValidPrefix(isArmor, tier);
+      }
+      if (enchantChoice === 'suffix' || enchantChoice === 'both') {
+        suffix = getValidSuffix(isArmor, tier);
+      }
+
+      // Build description
+      let desc = item ? item.name : "No Item (empty range)";
+      if (prefix) desc = `${prefix.name} ${desc}`;
+      if (suffix) desc = `${desc} ${suffix.name}`;
+
+      const benefits = [];
+      if (prefix) benefits.push(`• ${prefix.benefit}`);
+      if (suffix) benefits.push(`• ${suffix.benefit}`);
+
+      return desc + (benefits.length ? "<br>" + benefits.join("<br>") : "");
+    }
+
+    // ---------- Main Loot ----------
+function rollLoot(cl, dl) {
+      const ll = cl + dl;
+      const tier = getTier(ll);
+      const forced = document.getElementById("forcedOutcome").value;
+
+      // Determine outcome
+      let outcome = null;
+      let lootRoll = rollDice(1, 20);
+
+      if (forced === "random") {
+        // Outcome ranges:
+        // 1–6 Nothing, 7–8 Gold, 9–11 Potion, 12–13 Spell, 14–20 Gear
+        if (lootRoll >= 1 && lootRoll <= 6) outcome = "nothing";
+        else if (lootRoll >= 7 && lootRoll <= 8) outcome = "gold";
+        else if (lootRoll >= 9 && lootRoll <= 11) outcome = "potion";
+        else if (lootRoll >= 12 && lootRoll <= 13) outcome = "spell";
+        else outcome = "gear";
+      } else {
+        const f = parseInt(forced, 10);
+        // Map forced codes to outcomes
+		if (f === 0) outcome = "nothing";
+		else if (f === 1) outcome = "gold";
+		else if (f === 2) outcome = "potion";
+		else if (f === 4) outcome = "spell";
+		else if (f === 3) outcome = "gear";
+		else if (f === 5) return rollGear(tier, { forceEnchant: 'prefix' || 'suffix' || 'both' });
+		else if (f === 23) return rollGear(tier, { forceType: 'weapon', forceEnchant: 'mundane' });
+		else if (f === 24) return rollGear(tier, { forceType: 'weapon', forceEnchant: 'prefix' || 'suffix' || 'both' });
+		else if (f === 20) return rollGear(tier, { forceType: 'weapon', forceEnchant: 'prefix' });
+		else if (f === 21) return rollGear(tier, { forceType: 'weapon', forceEnchant: 'suffix' });
+		else if (f === 22) return rollGear(tier, { forceType: 'weapon', forceEnchant: 'both' });
+		else if (f === 33) return rollGear(tier, { forceType: 'armor',  forceEnchant: 'mundane' });
+		else if (f === 34) return rollGear(tier, { forceType: 'armor',  forceEnchant: 'prefix' || 'suffix' || 'both' });
+		else if (f === 30) return rollGear(tier, { forceType: 'armor',  forceEnchant: 'prefix' });
+		else if (f === 31) return rollGear(tier, { forceType: 'armor',  forceEnchant: 'suffix' });
+		else if (f === 32) return rollGear(tier, { forceType: 'armor',  forceEnchant: 'both' });
+		else outcome = "gear";
+      }
+
+      // Resolve outcome
+      switch (outcome) {
+        case "nothing": return "No Loot";
+        case "gold":    return rollGold();
+        case "potion":  return rollPotion(tier);
+        case "spell":   return rollMagicConsumable(tier);
+        case "gear":    return rollGear(tier);
+      }
+    }
+
+    // ---------- UI ----------
+function runLoot() {
+      const cl = Math.max(1, Math.min(20, parseInt(document.getElementById("cl").value || "1", 10)));
+      const dl = Math.max(1, Math.min(20, parseInt(document.getElementById("dl").value || "1", 10)));
+      const rolls = Math.max(1, parseInt(document.getElementById("rolls").value || "1", 10));
+
+      const out = [];
+      for (let i = 0; i < rolls; i++) {
+        out.push(`<div class="p-3 bg-gray-800/70 rounded">${rollLoot(cl, dl)}</div>`);
+      }
+      document.getElementById("results").innerHTML = out.join("");
+    }
+
+    document.getElementById("rollBtn").addEventListener("click", runLoot);
+  </script>
+</body>
+</html>
