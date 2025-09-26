@@ -1,303 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<title>EtC Loot Roller</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<script src="https://cdn.tailwindcss.com"></script>
-  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter the Catacombs - Loot Generator</title>
+    <link rel="stylesheet" href="index.css">
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
-	<h1 class="text-3xl font-bold mb-6">Enter the Catacombs<br>Loot Roller</h1>
+<body>
+    <div class="container">
+        <h1>Enter the Catacombs<br>Loot Generator</h1>
+        
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="openTab(event, 'loot-roller')">Loot Roller</button>
+            <button class="tab-btn" onclick="openTab(event, 'item-creator')">Item Creator</button>
+            <button class="tab-btn" onclick="openTab(event, 'potions')">Potions</button>
+            <button class="tab-btn" onclick="openTab(event, 'weapons')">Weapons</button>
+            <button class="tab-btn" onclick="openTab(event, 'armor')">Armor</button>
+            <button class="tab-btn" onclick="openTab(event, 'spells')">Spells</button>
+            <button class="tab-btn" onclick="openTab(event, 'prefixes')">Prefixes</button>
+            <button class="tab-btn" onclick="openTab(event, 'suffixes')">Suffixes</button>
+			<button class="tab-btn" onclick="openTab(event, 'curses')">Curses</button>
+            <button class="tab-btn" onclick="openTab(event, 'rule-adjustments')">EtC Rule Changes</button>
+        </div>
 
-	<!-- Tab Navigation -->
-	<div class="mb-6 border-b border-gray-700">
-		<nav class="flex space-x-8">
-			<button id="tab-loot" class="tab-btn px-4 py-2 font-semibold border-b-2 border-blue-500 text-blue-400">Loot Roller</button>
-			<button id="tab-potions" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Potions</button>
-			<button id="tab-spells" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Spells</button>
-			<button id="tab-weapons" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Weapons</button>
-			<button id="tab-armor" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Armor</button>
-			<button id="tab-prefixes" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Prefixes</button>
-			<button id="tab-suffixes" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-300">Suffixes</button>
-		</nav>
-	</div>
+        <div class="tab-content">
+            <!-- Loot Roller Tab -->
+            <div id="loot-roller" class="tab-pane active">
+                <div class="input-section">
+                    <div class="form-group">
+                        <label for="characterLevel">Character Level:</label>
+                        <input type="number" id="characterLevel" min="1" max="20" value="1">
+                    </div>
+                   
+                    <div class="form-group">
+                        <label for="dungeonLevel">Dungeon Level:</label>
+                        <input type="number" id="dungeonLevel" min="1" max="20" value="1">
+                    </div>
+                   
+                    <div class="form-group">
+                        <label for="numRolls">Number of Rolls:</label>
+                        <input type="number" id="numRolls" min="1" max="10" value="1">
+                    </div>
+                   
+                    <div class="form-group">
+                        <label for="guarantee">Guarantee:</label>
+                        <select id="guarantee">
+                            <option value="">Random Roll</option>
+                            <option value="no-loot">No Loot</option>
+                            <option value="gold">Gold</option>
+                            <option value="potion">Potion</option>
+                            <option value="spell-consumable">Spell Consumable</option>
+                            <option value="gear">Gear (magical and mundane)</option>
+                            <option value="magic-gear">Magic Gear (armor and weapon)</option>
+                            <option value="mundane-weapon">Mundane Weapon</option>
+                            <option value="magic-weapon">Magic Weapon</option>
+                            <option value="weapon-prefix">Weapon (Prefix)</option>
+                            <option value="weapon-suffix">Weapon (Suffix)</option>
+                            <option value="weapon-both">Weapon (P/S affixes)</option>
+                            <option value="mundane-armor">Mundane Armor</option>
+                            <option value="magic-armor">Magic Armor</option>
+                            <option value="armor-prefix">Armor (Prefix)</option>
+                            <option value="armor-suffix">Armor (Suffix)</option>
+                            <option value="armor-both">Armor (P/S affixes)</option>
+                            <option value="rare-gear">Rare Gear</option>
+                            <option value="rare-weapon">Rare Weapon</option>
+                            <option value="rare-armor">Rare Armor</option>
+                        </select>
+                    </div>
+                </div>
+               
+                <div class="button-section">
+                    <button id="generateLootBtn" onclick="generateLoot()">Generate Loot</button>
+                </div>
+               
+                <div class="results" id="results">
+                    <div class="no-loot">Click "Generate Loot" to roll for treasure</div>
+                </div>
+            </div>
 
-	<!-- Tab Content -->
-	<div id="content-loot" class="tab-content">
-		<!-- Controls -->
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg space-y-4 w-full max-w-2xl">
-			<div class="grid grid-cols-2 gap-4">
-				<label class="flex items-center justify-between gap-4">
-					<span class="font-semibold">Character Level:</span>
-					<input id="characterLevel" type="number" min="1" max="20" value="1" class="text-black px-2 py-1 rounded w-24">
-				</label>
-				<label class="flex items-center justify-between gap-4">
-					<span class="font-semibold">Dungeon Level:</span>
-					<input id="dungonLevel" type="number" min="1" max="20" value="1" class="text-black px-2 py-1 rounded w-24">
-				</label>
-				<label class="flex items-center justify-between gap-4">
-					<span class="font-semibold"># of Rolls:</span>
-					<input id="rolls" type="number" min="1" max="50" value="5" class="text-black px-2 py-1 rounded w-24">
-				</label>
-				<label class="flex items-center justify-between gap-4">
-					<span class="font-semibold">Force Outcome:</span>
-					<select id="forcedOutcome" class="text-black px-2 py-1 rounded w-full">
-						<option value="random">Random</option>
-						<optgroup label="Base Outcomes">
-							<option value="0">No Loot</option>
-							<option value="1">Gold</option>
-							<option value="2">Potion</option>
-							<option value="4">Spell Consumable</option>
-							<option value="3">Gear</option>
-							<option value="5">Magic Gear</option>
-						</optgroup>
-						<optgroup label="Force Gear — Weapon">
-							<option value="23">Mundane Weapon</option>
-							<option value="24">Magic Weapon</option>
-							<option value="20">Weapon (Prefix)</option>
-							<option value="21">Weapon (Suffix)</option>
-							<option value="22">Weapon (Prefix + Suffix)</option>
-						</optgroup>
-						<optgroup label="Force Gear — Armor">
-							<option value="33">Mundane Armor</option>
-							<option value="34">Magic Armor</option>
-							<option value="30">Armor (Prefix)</option>
-							<option value="31">Armor (Suffix)</option>
-							<option value="32">Armor (Prefix + Suffix)</option>
-						</optgroup>
-						<optgroup label="Force Gear — Rare">
-							<option value="40">Rare Gear</option>
-							<option value="41">Rare Weapon</option>
-							<option value="42">Rare Armor</option>
-						</optgroup>
-					</select>
-				</label>
-			</div>
+            <!-- Item Creator Tab -->
+            <div id="item-creator" class="tab-pane">
+                <h2>Custom Item Creator</h2>
+                <p>Design your own items by selecting base equipment and customizing with prefixes, suffixes, or rare properties.</p>
+                
+                <div class="creator-section">
+                    <div class="creator-controls">
+                        <div class="form-group">
+                            <label for="itemType">Item Type:</label>
+                            <select id="itemType" onchange="updateBaseItems()">
+                                <option value="weapon">Weapon</option>
+                                <option value="armor">Armor</option>
+                            </select>
+                        </div>
 
-			<button id="rollBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold w-full">
-				Roll Loot
-			</button>
-		</div>
+                        <div class="form-group">
+                            <label for="baseItem">Base Item:</label>
+                            <select id="baseItem">
+                                <!-- Populated by JavaScript -->
+                            </select>
+                        </div>
 
-		<!-- Results -->
-		<div id="results" class="mt-6 w-full max-w-3xl space-y-2"></div>
-	</div>
+                        <div class="form-group">
+                            <label for="itemQuality">Item Quality:</label>
+                            <select id="itemQuality" onchange="updateQualityOptions()">
+                                <option value="mundane">Mundane (No Magic)</option>
+                                <option value="enchanted">Enchanted (Prefix/Suffix)</option>
+                                <option value="rare">Rare (Multiple Affixes)</option>
+                            </select>
+                        </div>
 
-	<div id="content-potions" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-purple-400">Potion Table</h2>
-			<div class="overflow-x-auto">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="border-b border-gray-600">
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('name')">
-								Name <span id="sort-potion-name" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('healingSurge')">
-								Healing Surge <span id="sort-potion-healingSurge" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('spellPoints')">
-								Spell Points <span id="sort-potion-spellPoints" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('featureRestore')">
-								Feature Restore <span id="sort-potion-featureRestore" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('actionEcon')">
-								Action Economy <span id="sort-potion-actionEcon" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortPotions('value')">
-								Value <span id="sort-potion-value" class="text-xs opacity-50">▼▲</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody id="potions-table-body">
-						<!-- Populated by JavaScript -->
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+                        <div id="enchanted-options" class="quality-options" style="display: none;">
+                            <div class="form-group">
+                                <label for="prefixSelect">Prefix:</label>
+                                <select id="prefixSelect">
+                                    <option value="">None</option>
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
 
-	<div id="content-spells" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-cyan-400">Spell Tables</h2>
-			<div id="spell-tables-container">
-				<!-- Populated by JavaScript -->
-			</div>
-		</div>
-	</div>
+                            <div class="form-group">
+                                <label for="suffixSelect">Suffix:</label>
+                                <select id="suffixSelect">
+                                    <option value="">None</option>
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
 
-	<div id="content-weapons" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-orange-400">Weapon Table</h2>
-			<div class="overflow-x-auto">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="border-b border-gray-600">
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('name')">
-								Name <span id="sort-name" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('class')">
-								Class <span id="sort-class" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('damage')">
-								Damage <span id="sort-damage" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('proficiency')">
-								Proficiency <span id="sort-proficiency" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('strReq')">
-								Str Req <span id="sort-strReq" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('dexReq')">
-								Dex Req <span id="sort-dexReq" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('weaponProperties')">
-								Properties <span id="sort-weaponProperties" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('masteryBonus')">
-								Mastery <span id="sort-masteryBonus" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortWeapons('value')">
-								Value <span id="sort-value" class="text-xs opacity-50">▼▲</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody id="weapons-table-body">
-						<!-- Populated by JavaScript -->
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+                        <div id="rare-options" class="quality-options" style="display: none;">
+                            <div class="form-group">
+                                <label for="rareName1">Rare Name (First Part):</label>
+                                <select id="rareName1">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
 
-	<div id="content-armor" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-green-400">Armor Table</h2>
-			<div class="overflow-x-auto">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="border-b border-gray-600">
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('name')">
-								Name <span id="sort-armor-name" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('class')">
-								Class <span id="sort-armor-class" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('armorClass')">
-								Armor Class <span id="sort-armor-armorClass" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('proficiency')">
-								Proficiency <span id="sort-armor-proficiency" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('strReq')">
-								Str Req <span id="sort-armor-strReq" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('dexReq')">
-								Dex Req <span id="sort-armor-dexReq" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('dexMax')">
-								Dex Max <span id="sort-armor-dexMax" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('masteryBonus')">
-								Mastery <span id="sort-armor-masteryBonus" class="text-xs opacity-50">▼▲</span>
-							</th>
-							<th class="text-left p-2 cursor-pointer hover:bg-gray-700 select-none" onclick="sortArmor('value')">
-								Value <span id="sort-armor-value" class="text-xs opacity-50">▼▲</span>
-							</th>
-						</tr>
-					</thead>
-					<tbody id="armor-table-body">
-						<!-- Populated by JavaScript -->
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+                            <div class="form-group">
+                                <label for="rareName2">Rare Name (Second Part):</label>
+                                <select id="rareName2">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                            </div>
 
-	<div id="content-prefixes" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-red-400">Prefix Tables</h2>
-			
-			<div class="mb-6">
-				<h3 class="text-xl font-semibold mb-3 text-red-300">Regular Prefixes</h3>
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="border-b border-gray-600">
-								<th class="text-left p-2">Name</th>
-								<th class="text-left p-2">Benefit</th>
-							</tr>
-						</thead>
-						<tbody id="prefixes-table-body">
-							<!-- Populated by JavaScript -->
-						</tbody>
-					</table>
-				</div>
-			</div>
+                            <div class="form-group">
+                                <label for="addAffixType">Add Affix:</label>
+                                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                    <select id="addAffixType" style="flex: 1;">
+                                        <option value="">Choose affix type...</option>
+                                        <option value="prefix">Prefix</option>
+                                        <option value="suffix">Suffix</option>
+                                    </select>
+                                    <select id="addAffixSelect" style="flex: 2;" disabled>
+                                        <option value="">Select affix type first</option>
+                                    </select>
+                                    <button type="button" onclick="addChosenAffix()" class="add-affix-btn">Add</button>
+                                </div>
+                                <button type="button" onclick="addRandomAffix()" class="add-affix-btn">Add Random Affix</button>
+                            </div>
 
-			<div>
-				<h3 class="text-xl font-semibold mb-3 text-red-600">Curse Prefixes</h3>
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="border-b border-gray-600">
-								<th class="text-left p-2">Name</th>
-								<th class="text-left p-2">Benefit</th>
-							</tr>
-						</thead>
-						<tbody id="curse-prefixes-table-body">
-							<!-- Populated by JavaScript -->
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
+                            <div class="form-group">
+                                <label>Selected Affixes:</label>
+                                <div id="rareAffixes" class="affix-list">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
 
-	<div id="content-suffixes" class="tab-content hidden">
-		<div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-bold mb-4 text-yellow-400">Suffix Tables</h2>
-			
-			<div class="mb-6">
-				<h3 class="text-xl font-semibold mb-3 text-yellow-300">Regular Suffixes</h3>
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="border-b border-gray-600">
-								<th class="text-left p-2">Name</th>
-								<th class="text-left p-2">Benefit</th>
-							</tr>
-						</thead>
-						<tbody id="suffixes-table-body">
-							<!-- Populated by JavaScript -->
-						</tbody>
-					</table>
-				</div>
-			</div>
+                    </div>
 
-			<div>
-				<h3 class="text-xl font-semibold mb-3 text-yellow-600">Curse Suffixes</h3>
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="border-b border-gray-600">
-								<th class="text-left p-2">Name</th>
-								<th class="text-left p-2">Benefit</th>
-							</tr>
-						</thead>
-						<tbody id="curse-suffixes-table-body">
-							<!-- Populated by JavaScript -->
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
+                    <div class="creator-preview">
+                        <h3>Item Preview</h3>
+                        <div id="createdItem" class="created-item">
+                            <div class="no-loot">Select options to preview your custom item</div>
+                        </div>
+                        <div class="creator-buttons">
+                            <button onclick="addCustomItemToResults()" class="create-btn">Add to Loot Results</button>
+                            <button onclick="resetCreator()" class="reset-btn">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+               <!-- Potions Tab -->
+            <div id="potions" class="tab-pane">
+                <h2>Potion Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="potions-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Property</th>
+                            <th>Action</th>                            
+                            <th>Value (gp)</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- Weapons Tab -->
+            <div id="weapons" class="tab-pane">
+                <h2>Weapon Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="weapons-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Quality</th>
+                            <th>Class</th>
+                            <th>Damage</th>
+                            <th>Weapon Properties</th>                            
+                            <th>Proficiency Requirement</th>
+                            <th>Strength Requirement</th>
+                            <th>Dexterity Requirement</th>
+                            <th>Prowess Bonus</th>
+                            <th>Value (gp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- Armor Tab -->
+            <div id="armor" class="tab-pane">
+                <h2>Armor Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="armor-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Type</th> <!--item.class-->
+                            <th>Armor Class (AC)</th>
+                            <th>Dex AC Bonus</th>
+                            <th>Proficiency Requirement</th>
+                            <th>Strength Requirement</th>
+                            <th>Dexterity Requirement</th>
+                            <th>Prowess Bonus</th>
+                            <th>Value (gp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- Spells Tab -->
+            <div id="spells" class="tab-pane">
+                <h2>Spell Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="spells-table">
+                    <thead>
+                        <tr>
+                            <th>Spell Level</th>
+                            <th>Name</th>
+                            <th>Value (gp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- Prefixes Tab -->
+            <div id="prefixes" class="tab-pane">
+                <h2>Prefix Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="prefixes-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Property</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+
+            </div>
+
+            <!-- Suffixes Tab -->
+            <div id="suffixes" class="tab-pane">
+                <h2>Suffix Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="suffixes-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Property</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            
+
+            <!-- Curses Tab -->
+            <div id="curses" class="tab-pane">
+                <h2>Cursed Prefix Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="cursed-prefixes-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Property</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+                
+                <h2>Cursed Suffix Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="cursed-suffixes-table">
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Name</th>
+                            <th>Property</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- rule-adjustments Tab -->
+            <div id="rule-adjustments" class="tab-pane">
+                <div class="rule-adjustments-section">
+
+<h2>Character Creation</h2>
+<h3>Ability Scores</h3>
+<span class="term">At level 1</span><br>
+&nbsp;&nbsp;• Start with 6 ability scores of <i><b>10, 10, 10, 10, 8, 8,</b></i> that can be assigned to any score.<br>
+&nbsp;&nbsp;• You then have <i><b>14</b></i> points you can distribute in any combination, with only 1 score allowed to reach 17.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: values are not weighted as you ascend, as with traditional point buy systems).</i><br>
+&nbsp;&nbsp;• You do not get an ancestry or background boost to your ability scores.<br>
+<br>
+<span class="term">Leveling up</span><br>
+&nbsp;&nbsp;• You gain <i><b>1</b></i> ability point to assign as you wish at every level.<br>
+&nbsp;&nbsp;• At levels where your class would normally receive an ability score increase, you instead choose a feat.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: D&D5.24 has the "Ability Score Improvement" feat, where you would then gain 3 ability points that level)</i>
+<br><br>
+<span class="term">Hit Point Calculation</span><br>
+&nbsp;&nbsp;• At level 1:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Score + Class hit die max"</b></i>,<br>
+&nbsp;&nbsp;• Subsequent levels:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Modifier + Class hit die rolled"</b></i>.<br>
+&nbsp;&nbsp;• Rolled 1's on hit dice are counted as 2.
+<br><br>
+
+<h2>Stats & Proficiency</h2>
+<h3> Using and Equiping Gear</h3>
+&nbsp;&nbsp;• A character can use an item if they have:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>proficiency</b> or<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>ability score</b>(s).<br>
+&nbsp;&nbsp;• If the character has both, they gain the item’s <b>Prowess Bonus</b>, an extra benefit tied to that weapon or armor.<br>
+&nbsp;&nbsp;• All pieces of gear will have an ability score requirement, listed on their respective gear table.
+<br><br>
+
+<h3>Unmet Requirements Penalties</h3>
+&nbsp;&nbsp;• You can equip armor and weapons without meeting requirements.<br>
+&nbsp;&nbsp;• Weapons do not gain proficiency bonus in attack rolls, but can be used in all other ways.<br>
+&nbsp;&nbsp;• Armors grant AC bonuses, but while wearing it, you have<br> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Disadvantage on attack rolls<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Target creatures have advantage on spell saves against spells you cast.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Depending on the armor type, you may suffer an additional armor penalty.
+<br><br>
+
+<h3>Additional Armor Penalty per type:</h3>
+<span class="term">&nbsp;&nbsp;• Light Armor:</span> Cannot add Dex mod to AC.<br>
+<span class="term">&nbsp;&nbsp;• Medium Armor:</span> Cannot add Dex mod to AC, disadvantage on stealth, speed –5 ft.<br>
+<span class="term">&nbsp;&nbsp;• Heavy Armor:</span> Disadvantage on stealth, speed halved.
+<br><br>
+
+<h2>Armor Points and AC</h2>
+<h3>Base AC</h3>
+&nbsp;&nbsp;• Characters’ unarmored AC calculation starts at<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i><b>8 + Dex modifier (min 0) instead of 10 + Dex mod.</b></i>,<br><br>
+
+<h3>Torso Armor</h3>
+&nbsp;&nbsp;• Takes the place of the 5E armors, and allows only 1 torso piece equipped.<br><br>
+
+<h3>Accoutrement Armor</h3>
+&nbsp;&nbsp;• Each character has 4 Accoutrement Armor slots:<br>
+<i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Head<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Hands<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Waist<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Feet<br></i>
+&nbsp;&nbsp;• Equipping a piece of gear in these slots grants <i><b>+½ AC</b> (round down after adding all sources).</i>,<br><br>
 
 
-	
+<h3>Armor Points (AP)</h3>
+&nbsp;&nbsp;• A separate pool of expendable hit points.<br>
+&nbsp;&nbsp;• Refreshes at the start of each combat.<br>
+&nbsp;&nbsp;• Typically granted by gear.<br>
+&nbsp;&nbsp;• Distinct from HP and Temporary HP.<br><br>
+
+<h2>Spellcasting</h2>
+<h3>Everyone's a Caster</h3>
+&nbsp;&nbsp;• Any player character can read any spell scroll or read a spell Book.<br>
+&nbsp;&nbsp;• If a character cannot normally cast the spell in the scroll or book, they must make a spell casting check.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>Spell Casting Check:</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>DC = "10 + the Spell's Level"</b></i>.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>Check = "1d20 + Spellcasting Modifier"</b></i>.<br>
+&nbsp;&nbsp;• If the character does not have a Spellcasting Modifier already, they will use their Intelligence modifier.<br>
+&nbsp;&nbsp;• If a character learns a spell, but does not have a natural pool of Spell Points large enough to cast it, they increase their SP to the casting cost of the new spell.
+<br><br>
+<h3>Spell Points (SP)</h3>
+&nbsp;&nbsp;• Instead of spell slots, casters have a pool of spell points.<br> 
+&nbsp;&nbsp;• Each spell level costs a set number of points to cast.<br>
+&nbsp;&nbsp;• Points refresh on a long rest.<br>
+&nbsp;&nbsp;• Sorcerers or other classes that gain access to “Sorcery Points” can add those points into their Spell Point total.<br><br>
+    <div class="info-table">
+        <!-- Spell Point Costs -->
+        <table cellpadding="0">
+            <caption><strong>Spell Point Costs</strong></caption>
+            <tr>
+                <th>Level</th>
+                <th>SP Cost</th>
+            </tr>
+            <tr><td>1st</td><td>2</td></tr>
+            <tr><td>2nd</td><td>3</td></tr>
+            <tr><td>3rd</td><td>5</td></tr>
+            <tr><td>4th</td><td>6</td></tr>
+            <tr><td>5th</td><td>7</td></tr>
+            <tr><td>6th</td><td>9</td></tr>
+            <tr><td>7th</td><td>10</td></tr>
+            <tr><td>8th</td><td>11</td></tr>
+            <tr><td>9th</td><td>13</td></tr>
+        </table>
+        
+        <!-- Spell Point Pool (Levels 1-10) -->
+        <table cellpadding="0">
+            <caption><strong>Spell Point Pool (1-10)</strong></caption>
+            <tr>
+                <th>Level</th>
+                <th>SP Pool</th>
+            </tr>
+            <tr><td>1st</td><td>4</td></tr>
+            <tr><td>2nd</td><td>6</td></tr>
+            <tr><td>3rd</td><td>14</td></tr>
+            <tr><td>4th</td><td>17</td></tr>
+            <tr><td>5th</td><td>27</td></tr>
+            <tr><td>6th</td><td>32</td></tr>
+            <tr><td>7th</td><td>38</td></tr>
+            <tr><td>8th</td><td>44</td></tr>
+            <tr><td>9th</td><td>57</td></tr>
+            <tr><td>10th</td><td>64</td></tr>
+        </table>
+        
+        <!-- Spell Point Pool (Levels 11-20) -->
+        <table cellpadding="0">
+            <caption><strong>Spell Point Pool (11-20)</strong></caption>
+            <tr>
+                <th>Level</th>
+                <th>SP Pool</th>
+            </tr>
+            <tr><td>11th</td><td>73</td></tr>
+            <tr><td>12th</td><td>73</td></tr>
+            <tr><td>13th</td><td>83</td></tr>
+            <tr><td>14th</td><td>83</td></tr>
+            <tr><td>15th</td><td>94</td></tr>
+            <tr><td>16th</td><td>94</td></tr>
+            <tr><td>17th</td><td>107</td></tr>
+            <tr><td>18th</td><td>114</td></tr>
+            <tr><td>19th</td><td>123</td></tr>
+            <tr><td>20th</td><td>133</td></tr>
+        </table>
+    </div>
+<br>
+<h2>Healing and Resting</h2>
+<h3>Healing Surges</h3>
+&nbsp;&nbsp;• Healing Surges are a percentage based healing based around your total hit points. 1 Healing Surge is one quarter of your total hit points, rounded down.<br><br>
+<h3>Short and Long Rests</h3>
+&nbsp;&nbsp;• When taking a long rest, you must sleep in town. The cost of a night at the in is <b>50gp × your character level</b>.<br>
+&nbsp;&nbsp;• Resting in the dungeon will always count as a short rest, regardless if you rest longer.<br><br>
+
+<h2>Exploration</h2>
+<h3>Light</h3>
+&nbsp;&nbsp;• Light levels from D&D5E sources are all halved.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 1: If you have 60' of darkvision, in EtC you have 30' instead.</i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 2: A torch that sheds 20' of bright light and 20' of dim light, will instead shed 10' and 10', respectively.</i><br><br>
+<h3>Loot</h3>
+<span class="term">&nbsp;&nbsp;Loot Roll:</span> A single roll using the Enter the Catacombs Loot Roller.<br>
+&nbsp;&nbsp;• For every monster defeated, you gain 1 Loot Roll.<br>
+&nbsp;&nbsp;• For every chest, barrel, or other container you search, you gain 1 Loot Roll.<br>
+&nbsp;&nbsp;• Looting bodies takes time. For every 5 Loot Rolls, you must spend 1 uninterrupted minute looting the area.<br><br>
+<h3>Buying and Selling Gear</h3>
+&nbsp;&nbsp;• When selling an item to a town vendor, you gain GP equal to the item's value.<br>
+&nbsp;&nbsp;• Town vendors generate 5 enchanted items per long rest.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(The tier should be calculated as twice the current dungeon level, instead of "dungeon level + character level".)</i><br>
+&nbsp;&nbsp;• Town vendors sell their gear at 4× the item's value.
+            </div>
+        </div>
+    </div>
+
 </body>
 <footer>
 <script src="index.js"></script>

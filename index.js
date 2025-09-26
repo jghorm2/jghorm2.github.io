@@ -1,1970 +1,1958 @@
-console.log(document.getElementById("characterLevel").value)
-console.log(document.getElementById("characterLevel").innerHTML)
-const characterLevel = Math.max(1, Math.min(20, parseInt(document.getElementById("characterLevel").value || "1", 10)));
-const dungonLevel = Math.max(1, Math.min(20, parseInt(document.getElementById("dungonLevel").value || "1", 10)));
-const lootLevel = characterLevel+dungonLevel
-const tier = getTier(lootLevel);
 
 
-// --- Tab Switching Logic ---
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    // hide all panes
-    document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.add("hidden"));
-    // reset all buttons
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("bg-gray-800"));
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.add("bg-gray-700"));
-    // show chosen
-    const tab = btn.getAttribute("data-tab");
-    btn.classList.remove("bg-gray-700");
-    btn.classList.add("bg-gray-800");
-  });
-});
-
-// --- Example table renderers ---
-function renderRangeTable(arr, targetId) {
-  const tbody = document.getElementById(targetId);
-  tbody.innerHTML = "";
-  arr.forEach(e => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="px-2 py-1">${e.min ?? ""}-${e.max ?? ""}</td>
-      <td class="px-2 py-1">${e.name ?? ""}</td>
-      <td class="px-2 py-1">${e.value ?? ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderSpellTables(tblObj, targetId) {
-  const tbody = document.getElementById(targetId);
-  tbody.innerHTML = "";
-  for (const [level, spells] of Object.entries(tblObj)) {
-    const header = document.createElement("tr");
-    header.innerHTML = `<td colspan="2" class="font-semibold text-gray-300 py-2">${level}</td>`;
-    tbody.appendChild(header);
-
-    spells.forEach(s => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="px-2 py-1">${s.name ?? s}</td>
-        <td class="px-2 py-1">${s.value ?? ""}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-}
-
-
-function pickFromTable(table, roll) {
-      return table.find(isGearEnchanted => roll >= isGearEnchanted.min && roll <= isGearEnchanted.max) || null;
-    }
-
-function rollInAllowedRanges(allowed) {
-      let attempts = 0;
-      while (attempts++ < 500) {
-        const affixRange = rollDice(1, 2000);
-        for (const rng of allowed) {
-          if (affixRange >= rng.min && affixRange <= rng.max) return affixRange;
+        // Your existing loot generation code
+        function rollDie(sides) {
+            return Math.floor(Math.random() * sides) + 1;
         }
-      }
-      return null; // shouldn't happen with valid ranges
-    }
-
-function rollDice(num, sides) {
-			let total = 0;
-			for (let loopCounter = 0; loopCounter < num; loopCounter++) total += Math.floor(Math.random() * sides) + 1;
-		return total;
-	}
-
-function getTier(lootLevel) {
-			if (lootLevel < 9) return 1;
-			if (lootLevel < 17) return 2;
-			if (lootLevel < 25) return 3;
-			return 4;
-    }
-
-function allowedPrefixRanges(isArmor, tier) {
-			if (isArmor) {
-				if (tier === 1) return [{min:1,max:100},{min:406,max:435}];
-				if (tier === 2) return [{min:1,max:241},{min:406,max:549}];
-				if (tier === 3) return [{min:1,max:357},{min:406,max:679}];
-				if (tier === 4) return [{min:1,max:733}];
-			} else {
-				if (tier === 1) return [{min:406,max:435},{min:734,max:1011}];
-				if (tier === 2) return [{min:406,max:549},{min:734,max:1442}];
-				if (tier === 3) return [{min:406,max:679},{min:734,max:1859}];
-				if (tier === 4) return [{min:406,max:2000}];
-			}
-			return [];
-		}
-
-function allowedSuffixRanges(isArmor, tier) {
-			if (isArmor) {
-				if (tier === 1) return [{min:1,max:243},{min:1305,max:1387}];
-				if (tier === 2) return [{min:1,max:594},{min:1305,max:1532}];
-				if (tier === 3) return [{min:1,max:911},{min:1305,max:1640}];
-				if (tier === 4) return [{min:1,max:1640}];
-			} else {
-				if (tier === 1) return [{min:1302,max:1387},{min:1641,max:1736}];
-				if (tier === 2) return [{min:1302,max:1532},{min:1641,max:1880}];
-				if (tier === 3) return [{min:1302,max:2000}];
-				if (tier === 4) return [{min:1302,max:2000}];
-			}
-			return [];
-		}
-
-function allowedCursePrifixRanges(isArmor, tier) {
-			if (isArmor) {
-				if (tier === 1) return [{min:1,max:31}];
-				if (tier === 2) return [{min:1,max:41},{min:56,max:65}];
-				if (tier === 3) return [{min:1,max:75}];
-				if (tier === 4) return [{min:1,max:75}];
-			} else {
-				if (tier === 1) return [{min:76,max:100}];
-				if (tier === 2) return [{min:56,max:120}];
-				if (tier === 3) return [{min:56,max:120}];
-				if (tier === 4) return [{min:56,max:120}];
-			}
-			return [];
-		}
-
-function allowedCurseSuffixRanges(isArmor, tier) {
-			if (isArmor) {
-				if (tier === 1) return [{min:1,max:54},{min:137,max:149}];
-				if (tier === 2) return [{min:1,max:122},{min:137,max:168}];
-				if (tier === 3) return [{min:1,max:168}];
-				if (tier === 4) return [{min:1,max:168}];
-			} else {
-				if (tier === 1) return [{min:137,max:144}];
-				if (tier === 2) return [{min:137,max:200}];
-				if (tier === 3) return [{min:137,max:200}];
-				if (tier === 4) return [{min:137,max:200}];
-			}
-			return [];
-		}
-
-function getValidPrefix(isArmor, tier) {
-  // Roll normally from allowed ranges
-  const affixRange = rollInAllowedRanges(allowedPrefixRanges(isArmor, tier));
-  let chosen = affixRange ? pickFromTable(prefixTable, affixRange) : null;
-
-  // 2% chance to replace with a curse prefix
-  if (chosen && Math.random() < 0.02) {
-    const curseRoll = rollInAllowedRanges(allowedCursePrifixRanges(isArmor, tier));
-    chosen = curseRoll ? pickFromTable(prefixCurseTable, curseRoll) : null;
-    if (chosen) chosen.isCurse = true;
-  }
-
-  return chosen;
-}
-
-function getValidSuffix(isArmor, tier) {
-  // Roll normally from allowed ranges
-  const affixRange = rollInAllowedRanges(allowedSuffixRanges(isArmor, tier));
-  let chosen = affixRange ? pickFromTable(suffixTable, affixRange) : null;
-
-  // 2% chance to replace with a curse suffix
-  if (chosen && Math.random() < 0.02) {
-    const curseRoll = rollInAllowedRanges(allowedCurseSuffixRanges(isArmor, tier));
-    chosen = curseRoll ? pickFromTable(suffixCurseTable, curseRoll) : null;
-    if (chosen) chosen.isCurse = true;
-  }
-
-  return chosen;
-}
-
-function rollGold() {
-
-			const dice = rollDice(1, 20);
-			const multiplier = 1.01 + Math.random() * (1.35 - 1.01);
-			const gold = Math.floor(dice * (characterLevel+dungonLevel) * multiplier);
-	return `<strong>${gold}</strong> gold`;
-}
-
-function rollPotion(tier) {
-      const roll = rollDice(1, (15*tier));
-      const entry = potionTable.find(p => roll >= p.min && roll <= p.max);
-      return `<span style="color:#cb51bf;"><i><strong>${entry ? entry.name : "Unknown"}</strong></i></span> <br>Item Value: <strong>${entry ? entry.value : "Unknown"}</strong> gp`;
-    }
-
-function rollMagicConsumable(tier) {
-  let baseRoll = 1 + Math.floor((rollDice(1, 100) - 1) * ((tier * 25)) / 100);
-  let tableName;
-
-  if (baseRoll <= 9) tableName = "cantrip";
-  else if (baseRoll <= 19) tableName = "level1";
-  else if (baseRoll <= 29) tableName = "level2";
-  else if (baseRoll <= 39) tableName = "level3";
-  else if (baseRoll <= 49) tableName = "level4";
-  else if (baseRoll <= 59) tableName = "level5";
-  else if (baseRoll <= 69) tableName = "level6";
-  else if (baseRoll <= 79) tableName = "level7";
-  else if (baseRoll <= 89) tableName = "level8";
-  else tableName = "level9";
-
-  let table = spellTables[tableName];
-  let spellIndex = rollDice(1, table.length) - 1;
-  let spell = table[spellIndex];
-
-  let format = rollDice(1, 20) <= 19 ? "Spell Scroll" : "Spell Book";
-
-  let baseValue = spell.value;
-  if (format === "Spell Book") baseValue *= 5;
-
-  return `<span style="color:#2dc9e9;"><i><strong>${format} of ${spell.name}</i></strong></span><br>Item Value: <strong>${baseValue}</strong> gp`;
-}
-
-function rollAffixCount() {
-  const roll = rollDice(1, 20);
-  if (roll <= 4) return 2;
-  else if (roll <= 16) return 3;
-  else if (roll <= 18) return 4;
-  else return 5;
-}
-
-function rollMundaneItem(tier, isArmor) {
-      let roll = 0, item = null;
-      if (isArmor) {
-        if (tier === 1) roll = rollDice(1, 162);
-        else if (tier === 2) roll = rollDice(1, 452);
-        else if (tier === 3) roll = rollDice(1, 842);
-        else roll = rollDice(1, 1000);
-        item = pickFromTable(armorTable, roll);
-      } else {
-        if (tier === 1) roll = rollDice(1, 63);
-        else if (tier === 2) roll = rollDice(1, 369);
-        else if (tier === 3) roll = rollDice(1, 801);
-        else roll = rollDice(1, 1200);
-        item = pickFromTable(weaponTable, roll);
-      }
-      return { roll, item };
-    }
-
-// Helper: compute value per your rules
-function calculateFinalValue(baseValue, affixes, enchanted) {
-  const base = Number(baseValue) || 0;
-
-  if (!enchanted) {
-    // Mundane: just the base (no +20, no multipliers)
-    return Math.floor(base);
-  }
-
-  // Enchanted with affixes?
-  const numericAffixes = (affixes || []).filter(a => a && typeof a.multiplier === 'number');
-  if (numericAffixes.length === 0) {
-    // Enchanted but no multipliers: base + 20
-    return Math.floor(base + 20);
-  }
-
-  // Additive percentile multipliers, applied to (base + 20)
-  // effectiveMultiplier = 1 + Σ(multiplier - 1)
-  let effectiveMultiplier = 1;
-  for (const a of numericAffixes) {
-    effectiveMultiplier += (a.multiplier - 1);
-  }
-
-  return Math.floor((base + 20) * effectiveMultiplier);
-}
-
-function rollGear(tier, { forceType = null, forceEnchant = null } = {}) {
-  // Decide armor vs weapon
-  let isArmor = (forceType === 'armor') ? true :
-                (forceType === 'weapon') ? false :
-                (rollDice(1,20) <= 10);
-
-  // Roll a mundane base item from your tables/ranges
-  const { item } = rollMundaneItem(tier, isArmor);
-  const baseValue = item ? (item.value || 0) : 0;
-
-  // ---------- ENCHANTMENT TYPE ----------
-  let enchantChoice = forceEnchant;
-  if (!enchantChoice) {
-    const isGearEnchanted = rollDice(1, 20);
-    if (isGearEnchanted >= 1 && isGearEnchanted <= 8) enchantChoice = 'mundane';
-    else if (isGearEnchanted >= 9 && isGearEnchanted <= 13) enchantChoice = 'prefix';
-    else if (isGearEnchanted >= 14 && isGearEnchanted <= 18) enchantChoice = 'suffix';
-    else enchantChoice = 'both'; // 19–20
-  }
-
-  // ---------- RARE ITEM ROLL ----------
-  const isRare = (forceEnchant === 'rare') ||
-                 (enchantChoice !== 'mundane' && Math.random() < 0.02);
-
-  if (isRare) {
-    // Roll 2–5 affixes (prefix/suffix mix, no curses here, no duplicates)
-	const affixCount = rollAffixCount();
-    const chosenAffixes = [];
-    const usedAffixNames = new Set();
-
-    while (chosenAffixes.length < affixCount) {
-      const affixType = (rollDice(1, 2) === 1 ? 'prefix' : 'suffix');
-      let affix = null;
-
-      if (affixType === 'prefix') {
-        const r = rollInAllowedRanges(allowedPrefixRanges(isArmor, tier));
-        affix = r ? pickFromTable(prefixTable, r) : null;
-      } else {
-        const r = rollInAllowedRanges(allowedSuffixRanges(isArmor, tier));
-        affix = r ? pickFromTable(suffixTable, r) : null;
-      }
-
-      if (affix && !usedAffixNames.has(affix.name)) {
-        chosenAffixes.push(affix);
-        usedAffixNames.add(affix.name);
-      }
-
-      // Safety: stop if we've exhausted the pool
-      if (usedAffixNames.size >= (prefixTable.length + suffixTable.length)) break;
-    }
-
-    const title = getRareTitle();
-    let desc = `<i>"${title}"</i><br>${item ? item.name : "No Item (empty range)"}`;
-    const benefits = chosenAffixes.map(a => `• ${a.benefit}`);
-
-    // VALUE: enchanted (true), apply +20 before additive percent multipliers
-    const finalValue = calculateFinalValue(baseValue, chosenAffixes, true);
-
-    return `<span style="color:#ffff00;"><strong>${desc}</strong></span><br>${benefits.join("<br>")}<br>Item Value: <strong>${finalValue}</strong> gp`;
-  }
-
-  // ---------- NORMAL ENCHANT FLOW ----------
-  let prefix = null, suffix = null;
-
-  if (enchantChoice === 'prefix' || enchantChoice === 'both') {
-    prefix = getValidPrefix(isArmor, tier); // may 2% flip to curse internally
-  }
-  if (enchantChoice === 'suffix' || enchantChoice === 'both') {
-    suffix = getValidSuffix(isArmor, tier); // may 2% flip to curse internally
-  }
-
-  // Build description
-  let desc = item ? item.name : "No Item (empty range)";
-  if (prefix) desc = `${prefix.name} ${desc}`;
-  if (suffix) desc = `${desc} ${suffix.name}`;
-
-  const benefits = [];
-  if (prefix) {
-    if (prefix.isCurse) {
-      benefits.unshift(`Cursed: ${prefix.benefit}`);
-    } else {
-      benefits.push(`• ${prefix.benefit}`);
-    }
-  }
-  if (suffix) {
-    if (suffix.isCurse) {
-      benefits.unshift(`Cursed: ${suffix.benefit}`);
-    } else {
-      benefits.push(`• ${suffix.benefit}`);
-    }
-  }
-
-  // VALUE: enchanted if not 'mundane'
-  const enchanted = (enchantChoice !== 'mundane');
-  const affixesForValue = [];
-  if (prefix) affixesForValue.push(prefix);
-  if (suffix) affixesForValue.push(suffix);
-
-  const finalValue = calculateFinalValue(baseValue, affixesForValue, enchanted);
-
-// ---- Final return ----
-if (enchanted) {
-  return `<span style="color:#4850b8;"><i><strong>${desc}</strong></i></span>` +
-         `${benefits.length ? "<br>" + benefits.join("<br>") : ""}` +
-         `<br>Item Value: <strong>${finalValue}</strong> gp`;
-} else {
-  return `<span style="color:#ffffff;"><i><strong>${desc}</strong></i></span>` +
-         `<br>Item Value: <strong>${finalValue}</strong> gp`;
-}
-}
-
-function getRareTitle() {
-  const w1 = rareTitleWords1[rollDice(1, rareTitleWords1.length) - 1];
-  const w2 = rareTitleWords2[rollDice(1, rareTitleWords2.length) - 1];
-  return `${w1} ${w2}`;
-}
-// Global variable to store all loot results
-let allLootResults = [];
-
-// Enhanced rollLoot function that returns structured data
-function rollLoot(characterLevel, dungonLevel) {
-  const lootLevel = characterLevel + dungonLevel;
-  const tier = getTier(lootLevel);
-  const forced = document.getElementById("forcedOutcome").value;
-
-  // Determine outcome
-  let outcome = null;
-  let lootRoll = rollDice(1, 20);
-  let results = []; // Array to hold all results including extra loot
-
-  if (forced === "random") {
-    // Outcome ranges:
-    // 1–6 Nothing, 7–8 Gold, 9–11 Potion, 12–13 Spell, 14–20 Gear
-    if (lootRoll >= 1 && lootRoll <= 6) outcome = "nothing";
-    else if (lootRoll >= 7 && lootRoll <= 8) outcome = "gold";
-    else if (lootRoll >= 9 && lootRoll <= 11) outcome = "potion";
-    else if (lootRoll >= 12 && lootRoll <= 13) outcome = "spell";
-    else outcome = "gear";
-  } else {
-    const forceMenu = parseInt(forced, 10);
-
-    if (forceMenu === 0) outcome = "nothing";
-    else if (forceMenu === 1) outcome = "gold";
-    else if (forceMenu === 2) outcome = "potion";
-    else if (forceMenu === 4) outcome = "spell";
-    else if (forceMenu === 3) outcome = "gear";
-    else if (forceMenu === 5) {
-      const choices = ['prefix', 'suffix', 'both'];
-      const randomChoice = choices[rollDice(1, choices.length) - 1];
-      return [createLootResult("gear", rollGear(tier, { forceEnchant: randomChoice }), false)];
-    }
-    // ---------- Weapon ----------
-    else if (forceMenu === 23) return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: 'mundane' }), false)];
-    else if (forceMenu === 24) {
-      const choices = ['prefix', 'suffix', 'both'];
-      const randomChoice = choices[rollDice(1, choices.length) - 1];
-      return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: randomChoice }), false)];
-    }
-    else if (forceMenu === 20) return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: 'prefix' }), false)];
-    else if (forceMenu === 21) return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: 'suffix' }), false)];
-    else if (forceMenu === 22) return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: 'both' }), false)];
-
-    // ---------- Armor ----------
-    else if (forceMenu === 33) return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: 'mundane' }), false)];
-    else if (forceMenu === 34) {
-      const choices = ['prefix', 'suffix', 'both'];
-      const randomChoice = choices[rollDice(1, choices.length) - 1];
-      return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: randomChoice }), false)];
-    }
-    else if (forceMenu === 30) return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: 'prefix' }), false)];
-    else if (forceMenu === 31) return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: 'suffix' }), false)];
-    else if (forceMenu === 32) return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: 'both' }), false)];
-
-    // ---------- Rare ----------
-    else if (forceMenu === 40) return [createLootResult("gear", rollGear(tier, { forceEnchant: 'rare' }), false)];
-    else if (forceMenu === 41) return [createLootResult("gear", rollGear(tier, { forceType: 'weapon', forceEnchant: 'rare' }), false)];
-    else if (forceMenu === 42) return [createLootResult("gear", rollGear(tier, { forceType: 'armor', forceEnchant: 'rare' }), false)];
-
-    else outcome = "gear";
-  }
-
-  // Generate primary loot
-  let primaryResult = "";
-  if (outcome === "nothing") {
-    primaryResult = `<span style="color:#a0a0a0;">No Loot</span>`;
-  } else if (outcome === "gold") {
-    primaryResult = rollGold();
-  } else if (outcome === "potion") {
-    primaryResult = rollPotion(tier);
-  } else if (outcome === "spell") {
-    primaryResult = rollMagicConsumable(tier);
-  } else if (outcome === "gear") {
-    primaryResult = rollGear(tier);
-  }
-
-  // Add primary result
-  results.push(createLootResult(outcome, primaryResult, false));
-
-  // Check for extra loot
-  if ((outcome === "gold" || outcome === "potion") && rollDice(1, 20) <= 17) {
-    // All possible loot types
-    const lootTypes = ["gold", "potion", "spell", "gear"];
-    const altOutcome = lootTypes[rollDice(1, lootTypes.length) - 1];
-
-    // Generate extra loot
-    let extraResult = "";
-    if (altOutcome === "gold") extraResult = rollGold();
-    else if (altOutcome === "potion") extraResult = rollPotion(tier);
-    else if (altOutcome === "spell") extraResult = rollMagicConsumable(tier);
-    else if (altOutcome === "gear") extraResult = rollGear(tier);
-
-    // Add extra result as separate item
-    results.push(createLootResult(altOutcome, extraResult, true));
-  }
-
-  return results;
-}
-
-// Helper function to create structured loot result
-function createLootResult(type, html, isExtra) {
-  return {
-    type: type,
-    html: html,
-    isExtra: isExtra,
-    timestamp: Date.now()
-  };
-}
-
-// Enhanced runLoot function
-function runLoot() {
-  const characterLevel = Math.max(1, Math.min(20, parseInt(document.getElementById("characterLevel").value || "1", 10)));
-  const dungonLevel = Math.max(1, Math.min(20, parseInt(document.getElementById("dungonLevel").value || "1", 10)));
-  const rolls = Math.max(1, parseInt(document.getElementById("rolls").value || "1", 10));
-
-  // Clear previous results
-  allLootResults = [];
-
-  // Generate all loot
-  for (let i = 0; i < rolls; i++) {
-    const rollResults = rollLoot(characterLevel, dungonLevel);
-    allLootResults.push(...rollResults);
-  }
-
-  // Display results
-  displayLootResults();
-}
-
-// Function to display loot results with sorting options
-function displayLootResults() {
-  const resultsContainer = document.getElementById("results");
-  
-  if (allLootResults.length === 0) {
-    resultsContainer.innerHTML = '<div class="text-gray-400">No results to display</div>';
-    return;
-  }
-
-  // Create filtering controls with dropdown
-  const filteringControls = `
-    <div class="mb-4 p-3 bg-gray-800 rounded">
-      <div class="flex items-center gap-3">
-        <label for="loot-filter" class="text-gray-300 font-semibold">Filter by:</label>
-        <select id="loot-filter" onchange="sortLootResults(this.value)" class="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1 focus:outline-none focus:border-blue-500">
-            <option value="all">Show All</option>
-          <optgroup label="Common Items">
-            <option value="gold">Gold</option>
-            <option value="potion">Potions</option>
-            <option value="spell">Spell Scrolls/Books</option>
-            <option value="mundane-gear">Mundane Gear</option>
-          </optgroup>
-          <optgroup label="Gear">
-            <option value="ll-gear-types">All Gear</option>
-            <option value="enchanted-armor">Enchanted Armor</option>
-            <option value="enchanted-weapons">Enchanted Weapons</option>
-            <option value="rare-gear">Rare Gear</option>
-            <option value="magic-gear">Magical Gear</option>
-          </optgroup>
-            <option value="nothing">No loot</option>
-        </select>
-        <button onclick="clearAllLoot()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors font-semibold">Clear All</button>
-      </div>
-    </div>
-  `;
-
-  // Generate results HTML with clear buttons
-  const resultsHTML = allLootResults.map((result, index) => {
-    const extraLabel = result.isExtra ? '<span class="text-green-400 font-semibold">[EXTRA LOOT] </span>' : '';
-    return `
-      <div class="p-3 bg-gray-800/70 rounded loot-item relative" data-type="${result.type}" data-extra="${result.isExtra}" data-index="${index}">
-        <button onclick="clearLootItem(${index})" class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded transition-colors" title="Clear this item">×</button>
-        <div class="pr-8">${extraLabel}${result.html}</div>
-      </div>
-    `;
-  }).join('');
-
-  resultsContainer.innerHTML = filteringControls + resultsHTML;
-}
-
-// Function to sort and filter loot results
-function sortLootResults(filterType) {
-  const lootItems = document.querySelectorAll('.loot-item');
-
-  lootItems.forEach(item => {
-    const itemType = item.getAttribute('data-type');
-    const isExtra = item.getAttribute('data-extra') === 'true';
-    const itemHTML = item.innerHTML.toLowerCase();
-    
-    let shouldShow = false;
-    
-    switch (filterType) {
-      case 'all':
-        shouldShow = true;
-        break;
-      case 'nothing':
-        shouldShow = itemType === 'nothing';
-        break;
-      case 'gold':
-        shouldShow = itemType === 'gold';
-        break;
-      case 'potion':
-        shouldShow = itemType === 'potion';
-        break;
-      case 'spell':
-        shouldShow = itemType === 'spell';
-        break;
-      case 'mundane-gear':
-        shouldShow = itemType === 'gear' && 
-                   (itemHTML.includes('color:#ffffff') || // mundane gear is white
-                    (!itemHTML.includes('color:#4850b8') && !itemHTML.includes('color:#ffff00'))); // not blue or yellow
-        break;
-      case 'enchanted-armor':
-        shouldShow = itemType === 'gear' && 
-                   itemHTML.includes('color:#4850b8') && // enchanted gear is blue
-                   (itemHTML.includes('armor') || itemHTML.includes('helm') || itemHTML.includes('shield') ||
-                    itemHTML.includes('gauntlet') || itemHTML.includes('boot') || itemHTML.includes('cloak') ||
-                    itemHTML.includes('robe') || itemHTML.includes('vest') || itemHTML.includes('bracers'));
-        break;
-      case 'enchanted-weapons':
-        shouldShow = itemType === 'gear' && 
-                   itemHTML.includes('color:#4850b8') && // enchanted gear is blue
-                   !itemHTML.includes('color:#ffff00') && // not rare
-                   (itemHTML.includes('sword') || itemHTML.includes('axe') || itemHTML.includes('bow') ||
-                    itemHTML.includes('staff') || itemHTML.includes('dagger') || itemHTML.includes('mace') ||
-                    itemHTML.includes('spear') || itemHTML.includes('hammer') || itemHTML.includes('club') ||
-                    itemHTML.includes('crossbow') || itemHTML.includes('javelin') || itemHTML.includes('scimitar') ||
-                    itemHTML.includes('rapier') || itemHTML.includes('flail') || itemHTML.includes('halberd') ||
-                    itemHTML.includes('glaive') || itemHTML.includes('pike') || itemHTML.includes('trident') ||
-                    itemHTML.includes('whip') || itemHTML.includes('sling') || itemHTML.includes('dart'));
-        break;
-      case 'rare-gear':
-        shouldShow = itemType === 'gear' && itemHTML.includes('color:#ffff00'); // rare gear is yellow
-        break;
-      case 'magic-gear':
-        shouldShow = itemType === 'gear' && 
-                    (!itemHTML.includes('color:#ffffff') || // mundane gear is white
-                    (itemHTML.includes('color:#4850b8') || itemHTML.includes('color:#ffff00'))); //  blue or yellow
-        break;
-      case 'all-gear-types':
-        shouldShow = itemType === 'gear'
-        break;        
-      default:
-        shouldShow = true;
-    }
-    
-    item.style.display = shouldShow ? 'block' : 'none';
-  });
-}
-
-// Function to clear individual loot item
-function clearLootItem(index) {
-  // Store the current filter value
-  const currentFilter = document.getElementById('loot-filter')?.value || 'all';
-  
-  // Remove from the results array
-  allLootResults.splice(index, 1);
-  
-  // Re-display results with updated indices
-  displayLootResults();
-  
-  // Restore the filter selection and apply it
-  const filterDropdown = document.getElementById('loot-filter');
-  if (filterDropdown) {
-    filterDropdown.value = currentFilter;
-    sortLootResults(currentFilter);
-  }
-}
-
-// Add this to your existing event listeners
-document.getElementById("rollBtn").addEventListener("click", runLoot);
-
-// Function to clear all loot items
-function clearAllLoot() {
-  // Clear the results array
-  allLootResults = [];
-  
-  // Clear the results container
-  const resultsContainer = document.getElementById("results");
-  resultsContainer.innerHTML = '<div class="text-gray-400">No results to display</div>';
-}
-
-function pickFromTable(table, roll) {
-			return table.find(item => roll >= item.min && roll <= item.max) || null;
-		}
-
-		function rollInAllowedRanges(allowed) {
-			let attempts = 0;
-			while (attempts++ < 500) {
-				const affixRange = rollDice(1, 2000);
-				for (const rng of allowed) {
-					if (affixRange >= rng.min && affixRange <= rng.max) return affixRange;
-				}
-			}
-			return null;
-		}
-
-		function rollDice(num, sides) {
-			let total = 0;
-			for (let i = 0; i < num; i++) total += Math.floor(Math.random() * sides) + 1;
-			return total;
-		}
-
-		function getTier(lootLevel) {
-			if (lootLevel < 9) return 1;
-			if (lootLevel < 17) return 2;
-			if (lootLevel < 25) return 3;
-			return 4;
-		}
-
-// Tab switching functionality
-		function showTab(tabName) {
-			// Hide all content
-			document.querySelectorAll('.tab-content').forEach(content => {
-				content.classList.add('hidden');
-			});
-			
-			// Reset all tab buttons
-			document.querySelectorAll('.tab-btn').forEach(btn => {
-				btn.classList.remove('border-blue-500', 'text-blue-400');
-				btn.classList.add('border-transparent', 'text-gray-400');
-			});
-			
-			// Show selected content
-			document.getElementById(`content-${tabName}`).classList.remove('hidden');
-			
-			// Activate selected tab
-			const activeTab = document.getElementById(`tab-${tabName}`);
-			activeTab.classList.remove('border-transparent', 'text-gray-400');
-			activeTab.classList.add('border-blue-500', 'text-blue-400');
-		}
-
-		// Populate table functions
-		function populateTable(tableData, bodyId, hasMultiplier = false) {
-			const tbody = document.getElementById(bodyId);
-			tbody.innerHTML = '';
-			
-			tableData.forEach(item => {
-				const row = document.createElement('tr');
-				row.className = 'border-b border-gray-700 hover:bg-gray-700';
-				
-				let html = `
-					<td class="p-2">${item.min}-${item.max}</td>
-					<td class="p-2 font-semibold">${item.name}</td>
-				`;
-				
-				if (hasMultiplier) {
-					html += `
-						<td class="p-2 text-sm">${item.benefit}</td>
-						<td class="p-2">${item.multiplier}x</td>
-					`;
-				} else {
-					html += `<td class="p-2">${item.value} gp</td>`;
-				}
-				
-				row.innerHTML = html;
-				tbody.appendChild(row);
-			});
-		}
-
-		// Potion and Armor sorting variables
-		let potionSortState = {};
-		let armorSortState = {};
-
-		function sortPotions(column) {
-			// Toggle sort direction for this column
-			if (!potionSortState[column]) {
-				potionSortState[column] = 'asc';
-			} else if (potionSortState[column] === 'asc') {
-				potionSortState[column] = 'desc';
-			} else {
-				potionSortState[column] = 'asc';
-			}
-
-			// Reset visual indicators for all columns
-			['name', 'healingSurge', 'spellPoints', 'featureRestore', 'actionEcon', 'value'].forEach(col => {
-				const indicator = document.getElementById(`sort-potion-${col}`);
-				if (col === column) {
-					indicator.innerHTML = potionSortState[column] === 'asc' ? '▲' : '▼';
-					indicator.classList.remove('opacity-50');
-				} else {
-					indicator.innerHTML = '▼▲';
-					indicator.classList.add('opacity-50');
-				}
-			});
-
-			// Create a copy and sort
-			const sortedPotions = [...potionTable].sort((a, b) => {
-				let aVal = a[column];
-				let bVal = b[column];
-
-				// Special handling for numerical values
-				if (column === 'value' || column === 'healingSurge') {
-					if (aVal === 'Full') aVal = 999;
-					if (bVal === 'Full') aVal = 999;
-					if (aVal === '-') aVal = -1;
-					if (bVal === '-') bVal = -1;
-					aVal = parseInt(aVal) || 0;
-					bVal = parseInt(bVal) || 0;
-				} else {
-					aVal = aVal.toString().toLowerCase();
-					bVal = bVal.toString().toLowerCase();
-				}
-
-				if (aVal < bVal) return potionSortState[column] === 'asc' ? -1 : 1;
-				if (aVal > bVal) return potionSortState[column] === 'asc' ? 1 : -1;
-				return 0;
-			});
-
-			populatePotionTableWithData(sortedPotions);
-		}
-
-		function sortArmor(column) {
-			// Toggle sort direction for this column
-			if (!armorSortState[column]) {
-				armorSortState[column] = 'asc';
-			} else if (armorSortState[column] === 'asc') {
-				armorSortState[column] = 'desc';
-			} else {
-				armorSortState[column] = 'asc';
-			}
-
-			// Reset visual indicators for all columns
-			['name', 'class', 'armorClass', 'proficiency', 'strReq', 'dexReq', 'dexMax', 'masteryBonus', 'value'].forEach(col => {
-				const indicator = document.getElementById(`sort-armor-${col}`);
-				if (col === column) {
-					indicator.innerHTML = armorSortState[column] === 'asc' ? '▲' : '▼';
-					indicator.classList.remove('opacity-50');
-				} else {
-					indicator.innerHTML = '▼▲';
-					indicator.classList.add('opacity-50');
-				}
-			});
-
-			// Create a copy and sort
-			const sortedArmor = [...armorTable].sort((a, b) => {
-				let aVal = a[column];
-				let bVal = b[column];
-
-				// Special handling for numerical values and AC
-				if (column === 'value' || column === 'strReq' || column === 'dexReq' || column === 'dexMax') {
-					if (aVal === '-' && bVal !== '-') return armorSortState[column] === 'asc' ? 1 : -1;
-					if (bVal === '-' && aVal !== '-') return armorSortState[column] === 'asc' ? -1 : 1;
-					if (aVal === '-' && bVal === '-') return 0;
-					aVal = parseInt(aVal) || 0;
-					bVal = parseInt(bVal) || 0;
-				} else if (column === 'armorClass') {
-					// Handle AC like "+2", "18", "-"
-					if (aVal === '-' && bVal !== '-') return armorSortState[column] === 'asc' ? 1 : -1;
-					if (bVal === '-' && aVal !== '-') return armorSortState[column] === 'asc' ? -1 : 1;
-					if (aVal === '-' && bVal === '-') return 0;
-					aVal = parseInt(aVal.replace('+', '')) || 0;
-					bVal = parseInt(bVal.replace('+', '')) || 0;
-				} else {
-					aVal = aVal.toString().toLowerCase();
-					bVal = bVal.toString().toLowerCase();
-				}
-
-				if (aVal < bVal) return armorSortState[column] === 'asc' ? -1 : 1;
-				if (aVal > bVal) return armorSortState[column] === 'asc' ? 1 : -1;
-				return 0;
-			});
-
-			populateArmorTableWithData(sortedArmor);
-		}
-
-		function populatePotionTable() {
-			populatePotionTableWithData(potionTable);
-		}
-
-		function populatePotionTableWithData(potions) {
-			const tbody = document.getElementById('potions-table-body');
-			tbody.innerHTML = '';
-			
-			potions.forEach(potion => {
-				const row = document.createElement('tr');
-				row.className = 'border-b border-gray-700 hover:bg-gray-700';
-				
-				row.innerHTML = `
-					<td class="p-2 font-semibold">${potion.name}</td>
-					<td class="p-2">${potion.healingSurge}</td>
-					<td class="p-2">${potion.spellPoints}</td>
-					<td class="p-2">${potion.featureRestore}</td>
-					<td class="p-2">${potion.actionEcon}</td>
-					<td class="p-2">${potion.value} gp</td>
-				`;
-				
-				tbody.appendChild(row);
-			});
-		}
-
-		function populateArmorTable() {
-			populateArmorTableWithData(armorTable);
-		}
-
-		function populateArmorTableWithData(armors) {
-			const tbody = document.getElementById('armor-table-body');
-			tbody.innerHTML = '';
-			
-			armors.forEach(armor => {
-				const row = document.createElement('tr');
-				row.className = 'border-b border-gray-700 hover:bg-gray-700';
-				
-				row.innerHTML = `
-					<td class="p-2 font-semibold">${armor.name}</td>
-					<td class="p-2">${armor.class}</td>
-					<td class="p-2">${armor.armorClass}</td>
-					<td class="p-2">${armor.proficiency}</td>
-					<td class="p-2">${armor.strReq}</td>
-					<td class="p-2">${armor.dexReq}</td>
-					<td class="p-2">${armor.dexMax}</td>
-					<td class="p-2">${armor.masteryBonus}</td>
-					<td class="p-2">${armor.value} gp</td>
-				`;
-				
-				tbody.appendChild(row);
-			});
-		}
-
-		// Updated populate table function for affixes (no range/multiplier)
-		function populateAffixTable(tableData, bodyId) {
-			const tbody = document.getElementById(bodyId);
-			tbody.innerHTML = '';
-			
-			tableData.forEach(item => {
-				const row = document.createElement('tr');
-				row.className = 'border-b border-gray-700 hover:bg-gray-700';
-				
-				row.innerHTML = `
-					<td class="p-2 font-semibold">${item.name}</td>
-					<td class="p-2 text-sm">${item.benefit}</td>
-				`;
-				
-				tbody.appendChild(row);
-			});
-		}
-        let weaponSortState = {};
-		function sortWeapons(column) {
-			// Toggle sort direction for this column (default to ascending first)
-			if (!weaponSortState[column]) {
-				weaponSortState[column] = 'asc';
-			} else if (weaponSortState[column] === 'asc') {
-				weaponSortState[column] = 'desc';
-			} else {
-				weaponSortState[column] = 'asc';
-			}
-
-			// Reset visual indicators for all columns
-			['name', 'class', 'damage', 'proficiency', 'strReq', 'dexReq', 'weaponProperties', 'masteryBonus', 'value'].forEach(col => {
-				const indicator = document.getElementById(`sort-${col}`);
-				if (col === column) {
-					indicator.innerHTML = weaponSortState[column] === 'asc' ? '▲' : '▼';
-					indicator.classList.remove('opacity-50');
-				} else {
-					indicator.innerHTML = '▼▲';
-					indicator.classList.add('opacity-50');
-				}
-			});
-
-			// Create a copy of the weapon table and sort it
-			const sortedWeapons = [...weaponTable].sort((a, b) => {
-				let aVal = a[column];
-				let bVal = b[column];
-
-				// Special handling for numerical values
-				if (column === 'value') {
-					aVal = parseInt(aVal);
-					bVal = parseInt(bVal);
-				}
-				// Handle requirements that might be "-" or numbers
-				else if (column === 'strReq' || column === 'dexReq') {
-					// Put "-" values at the end for ascending, beginning for descending
-					if (aVal === '-' && bVal !== '-') return weaponSortState[column] === 'asc' ? 1 : -1;
-					if (bVal === '-' && aVal !== '-') return weaponSortState[column] === 'asc' ? -1 : 1;
-					if (aVal === '-' && bVal === '-') return 0;
-					aVal = parseInt(aVal);
-					bVal = parseInt(bVal);
-				}
-				// String comparison for other fields
-				else {
-					aVal = aVal.toString().toLowerCase();
-					bVal = bVal.toString().toLowerCase();
-				}
-
-				if (aVal < bVal) return weaponSortState[column] === 'asc' ? -1 : 1;
-				if (aVal > bVal) return weaponSortState[column] === 'asc' ? 1 : -1;
-				return 0;
-			});
-
-			// Re-populate the table with sorted data
-			populateWeaponTableWithData(sortedWeapons);
-		}
-
-		function populateWeaponTable() {
-			populateWeaponTableWithData(weaponTable);
-		}
-
-		function populateWeaponTableWithData(weapons) {
-			const tbody = document.getElementById('weapons-table-body');
-			tbody.innerHTML = '';
-			
-			weapons.forEach(weapon => {
-				const row = document.createElement('tr');
-				row.className = 'border-b border-gray-700 hover:bg-gray-700';
-				
-				row.innerHTML = `
-					<td class="p-2 font-semibold">${weapon.name}</td>
-					<td class="p-2">${weapon.class}</td>
-					<td class="p-2">${weapon.damage}</td>
-					<td class="p-2">${weapon.proficiency}</td>
-					<td class="p-2">${weapon.strReq}</td>
-					<td class="p-2">${weapon.dexReq}</td>
-					<td class="p-2 text-xs">${weapon.weaponProperties}</td>
-					<td class="p-2">${weapon.masteryBonus}</td>
-					<td class="p-2">${weapon.value} gp</td>
-				`;
-				
-				tbody.appendChild(row);
-			});
-		}
-
-		function populateSpellTables() {
-			const container = document.getElementById('spell-tables-container');
-			container.innerHTML = '';
-			
-			Object.entries(spellTables).forEach(([level, spells]) => {
-				const div = document.createElement('div');
-				div.className = 'mb-6';
-				
-				// Split spells into columns of 10
-				const columns = [];
-				for (let i = 0; i < spells.length; i += 10) {
-					columns.push(spells.slice(i, i + 10));
-				}
-				
-				let columnsHtml = '';
-				columns.forEach(columnSpells => {
-					columnsHtml += `
-						<div class="flex-1 min-w-0 mr-4">
-							<table class="w-full text-sm">
-								<thead>
-									<tr class="border-b border-gray-600">
-										<th class="text-left p-2">Spell Name</th>
-										<th class="text-left p-2">Value</th>
-									</tr>
-								</thead>
-								<tbody>
-									${columnSpells.map(spell => `
-										<tr class="border-b border-gray-700 hover:bg-gray-700">
-											<td class="p-2 font-semibold">${spell.name}</td>
-											<td class="p-2">${spell.value} gp</td>
-										</tr>
-									`).join('')}
-								</tbody>
-							</table>
-						</div>
-					`;
-				});
-				
-				div.innerHTML = `
-					<h3 class="text-xl font-semibold mb-3 text-cyan-300">${level.charAt(0).toUpperCase() + level.slice(1)} Spells</h3>
-					<div class="flex flex-wrap gap-4">
-						${columnsHtml}
-					</div>
-				`;
-				container.appendChild(div);
-			});
-		}
-
-		// Initialize tabs and populate tables
-		document.addEventListener('DOMContentLoaded', function() {
-			// Add tab click listeners
-			document.querySelectorAll('.tab-btn').forEach(btn => {
-				btn.addEventListener('click', () => {
-					const tabName = btn.id.replace('tab-', '');
-					showTab(tabName);
-				});
-			});
-
-			// Populate all tables
-	populatePotionTable();
-	populateWeaponTable();
-	populateArmorTable();
-	populateAffixTable(prefixTable, 'prefixes-table-body');
-	populateAffixTable(suffixTable, 'suffixes-table-body');
-	populateAffixTable(prefixCurseTable, 'curse-prefixes-table-body');
-	populateAffixTable(suffixCurseTable, 'curse-suffixes-table-body');
-	populateSpellTables();
-
-			// Show default tab
-			showTab('loot');
-		});
-
-document.getElementById("rollBtn").addEventListener("click", runLoot);
-window.sortLootResults = sortLootResults;
-window.clearLootItem = clearLootItem;
-window.clearAllLoot = clearAllLoot;
-
-// ---------- Tables ----------
-const rareTitleWords1 = [
-		"Beast", "Eagle", "Raven", "Viper", "Ghoul", "Skull", "Blood", "Dread", "Doom", "Cruel", "Brimstone",
-		"Grim", "Bone", "Death", "Shadow", "Storm", "Rune", "Plague", "Stone", "Wraith", "Spirit", "Demon",
-		"Empyrian", "Bramble", "Pain", "Loath", "Glyph", "Imp", "Fiend", "Hailstone", "Gale", "Dire", "Soul",
-		"Corpse", "Carrion", "Armageddon", "Havoc", "Bitter", "Entropy", "Chaos", "Order", "Rule","Corruption",
-	];
-const rareTitleWords2 = [
-		"Wand", "Barb", "Dart", "Quarrel", "Flight", "Horn", "Quill", "Branch", "Song", "Cry", "Chant", "Gnarl", "Crest", "Veil", "Impaler",
-		"Blow", "Bane", "Breaker", "Crack", "Knell", "Spike", "Skewer", "Scourge", "Wrack", "Needle", "Bolt", "Fletch", "Nock", "Stinger",
-		"Mask", "Casque", "Cowl", "Pelt", "Coat", "Suit", "Shroud", "Mantle", "Badge", "Aegis", "Tower", "Wing", "Chain", "Lash", "Guard",
-		"Rock", "Ward", "Shield", "Mark", "Hand", "Claw", "Grip", "Hold", "Finger", "Shank", "Tread", "Greave", "Nails", "Brogues", "Jack",
-		"Slippers", "Buckle", "Lock", "Winding", "Strap", "Cord", "Circle", "Eye", "Spiral", "Gyre", "Whorl", "Lance", "Mallet","Gnash",
-		"Emblem", "Fist", "Clutches", "Grasp", "Touch", "Knuckle", "Spur", "Stalker", "Blazer", "Trample", "Track", "Clasp", "Harness",
-		"Scalpel", "Gutter", "Razor", "Edge", "Splitter", "Sever", "Rend", "Slayer", "Spawn", "Star", "Smasher", "Crusher", "Grinder",
-		"Goad", "Spire", "Call", "Spell", "Weaver", "Visage", "Circlet", "Hood", "Brow", "Visor", "Hide", "Carapace", "Wrap", "Cloak",
-		"Heart", "Necklace", "Beads", "Gorget", "Wood", "Bludgeon", "Loom", "Master", "Hew", "Mar", "Stake", "Pale", "Prod", "Fringe", 
-		"Knot", "Loop", "Turn", "Coil", "Band", "Talisman", "Noose", "Collar", "Torc", "Scarab", "Brand", "Cudgel", "Harp", "Barri",
-		"Crook", "Shell", "Picket", "Flange", "Scratch", "Fang", "Thirst", "Scythe", "Saw", "Cleaver", "Sunder", "Mangler", "Reaver", 
-	];
+
+        function rollPercentage() {
+            return rollDie(100);
+        }
+
+        function getLootLevel(characterLevel, dungeonLevel) {
+            const lootLevel = characterLevel + dungeonLevel;
+            if (lootLevel < 9) return 1;
+            if (lootLevel < 17) return 2;
+            if (lootLevel < 25) return 3;
+            return 4;
+        }
+
+        function getWeightedRandomItem(table, tier) {
+            const filteredTable = table.filter(item => item.tier <= tier);
+            const totalWeight = filteredTable.reduce((sum, item) => sum + item.weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (let item of filteredTable) {
+                random -= item.weight;
+                if (random <= 0) return item;
+            }
+            return filteredTable[filteredTable.length - 1];
+        }
+
+        function generateGold(characterLevel, dungeonLevel) {
+            const lootLevel = characterLevel + dungeonLevel;
+            const baseAmount = lootLevel * rollDie(20);
+            const multiplier = (100 + rollDie(41) - 1) / 100;
+            const amount = Math.floor(baseAmount * multiplier);
+           
+            return {
+                type: 'gold',
+                name: `${amount} Gold Pieces`,
+                value: amount,
+                property: "",
+            };
+        }
+
+        function generatePotion(tier) {
+            const roll = rollDie(15 * tier);
+            const potion = getWeightedRandomItem(potionTable, tier);
+            
+            return {
+                type: 'potion',
+                name: potion.name,
+                property: potion.property || "",
+                value: potion.value || 0
+            };
+        }
+
+        function generateSpellConsumable(tier) {
+            const isBook = rollDie(20) === 20;
+            const spellRoll = rollDie(25 * tier);
+            let targetSpellLevel;
+            
+            if (spellRoll <= 9) targetSpellLevel = 0;
+            else if (spellRoll <= 19) targetSpellLevel = 1;
+            else if (spellRoll <= 29) targetSpellLevel = 2;
+            else if (spellRoll <= 39) targetSpellLevel = 3;
+            else if (spellRoll <= 49) targetSpellLevel = 4;
+            else if (spellRoll <= 59) targetSpellLevel = 5;
+            else if (spellRoll <= 69) targetSpellLevel = 6;
+            else if (spellRoll <= 79) targetSpellLevel = 7;
+            else if (spellRoll <= 89) targetSpellLevel = 8;
+            else targetSpellLevel = 9;
+            
+            const availableSpells = spellTable.filter(s => s.spellLevel === targetSpellLevel);
+            const spell = availableSpells[rollDie(availableSpells.length) - 1] || spellTable[0];
+            
+            return {
+                type: 'magic-consumable',
+                name: `${isBook ? 'Book' : 'Scroll'} of ${spell.name}`,
+                property: `Contains the ${spell.name} spell (Level ${spell.spellLevel}).`,
+                value: spell.value + (isBook ? 50 : 0)
+            };
+        }
+
+        function generateGear(tier, guarantee = null) {
+            let isArmor, enchantRoll, isRare = false;
+            if (guarantee && guarantee.includes('armor')) {
+                isArmor = true;
+            } else if (guarantee && guarantee.includes('weapon')) {
+                isArmor = false;
+            } else {
+                isArmor = rollDie(20) <= 10;
+            }
+            const baseItem = isArmor ? 
+                getWeightedRandomItem(armorTable, tier) : 
+                getWeightedRandomItem(weaponTable, tier);
+            let item = {
+                name: baseItem.name,
+                property: "",
+                value: baseItem.value,
+                multiplier: 1
+            };
+            if (!guarantee || !guarantee.includes('mundane')) {
+                if (guarantee && guarantee.includes('rare')) {
+                    isRare = true;
+                } else if (rollPercentage() >= 95) {
+                    isRare = true;
+                }
+            }
+            
+            if (isRare) {
+                const numAffixes = rollDie(4) + 1;
+                const name1 = rareName1[rollDie(rareName1.length) - 1];
+                const name2 = rareName2[rollDie(rareName2.length) - 1];
+                item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
+                item.isRare = true;
+                let properties = [];
+                let usedCategories = new Set();
+                
+                for (let i = 0; i < numAffixes; i++) {
+                    const isPrefix = rollDie(2) === 1;
+                    const table = isPrefix ? prefixTable : suffixTable;
+                        
+                    const affix = getWeightedRandomItem(table.filter(a => 
+                        a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
+                    ), tier);
+                    
+                    if (affix) {
+                        if (!usedCategories.has(affix.category)) {
+                            usedCategories.add(affix.category);
+                            properties.push(`• ${affix.property}`);
+                            item.multiplier += affix.multiplier;
+                        }
+                    }
+                }
+                
+                item.property = properties.join('<br>');
+            } else {
+                if (guarantee && guarantee.includes('mundane')) {
+                    enchantRoll = 1;
+                } else if (guarantee && guarantee.includes('prefix')) {
+                    enchantRoll = 10;
+                } else if (guarantee && guarantee.includes('suffix')) {
+                    enchantRoll = 15;
+                } else if (guarantee && guarantee.includes('both')) {
+                    enchantRoll = 20;
+                } else if (guarantee && guarantee.includes('magic')) {
+                    enchantRoll = rollDie(12) + 8;
+                } else {
+                    enchantRoll = rollDie(20);
+                }
+                
+                if (enchantRoll >= 9) {
+                    item.value += 15;
+                    
+                    const hasPrefix = enchantRoll >= 9 && (enchantRoll <= 13 || enchantRoll >= 19);
+                    const hasSuffix = enchantRoll >= 14;
+                    
+                    let properties = [];
+                    let usedCategories = new Set();
+                    
+                    if (hasPrefix) {
+                        const isCursed = rollDie(50) === 1;
+                        const table = isCursed ? cursedPrefixTable : prefixTable;
+                        const prefix = getWeightedRandomItem(table.filter(a => 
+                            a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
+                        ), tier);
+                        
+                        if (prefix) {
+                            item.name = `${prefix.name} ${item.name}`;
+                            usedCategories.add(prefix.category);
+                            properties.push(`• ${prefix.property}`);
+                            item.multiplier += prefix.multiplier;
+                            if (isCursed) item.isCursed = true;
+                        }
+                    }
+                    
+                    if (hasSuffix) {
+                        const isCursed = rollDie(50) === 1;
+                        const table = isCursed ? cursedSuffixTable : suffixTable;
+                        
+                        let availableAffixes = table.filter(a => 
+                            (a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')) &&
+                            !usedCategories.has(a.category)
+                        );
+                        
+                        if (availableAffixes.length === 0) {
+                            availableAffixes = table.filter(a => 
+                                a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
+                            );
+                        }
+                        
+                        const suffix = getWeightedRandomItem(availableAffixes, tier);
+                        
+                        if (suffix) {
+                            item.name = `${item.name} ${suffix.name}`;
+                            usedCategories.add(suffix.category);
+                            properties.push(`• ${suffix.property}`);
+                            item.multiplier += suffix.multiplier;
+                            if (isCursed) item.isCursed = true;
+                        }
+                    }
+                    
+                    item.property = properties.join('<br>');
+                }
+            }
+            
+            item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
+            
+            return item;
+        }
+
+        function generateSingleLoot(characterLevel, dungeonLevel, guarantee = null) {
+            const tier = getLootLevel(characterLevel, dungeonLevel);
+            let roll;
+           
+            if (guarantee === 'no-loot') return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
+            if (guarantee === 'gold') roll = 7;
+            else if (guarantee === 'potion') roll = 9;
+            else if (guarantee === 'spell-consumable') roll = 11;
+            else if (guarantee && guarantee.includes('gear') || guarantee && guarantee.includes('weapon') || guarantee && guarantee.includes('armor')) roll = 13;
+            else roll = rollDie(20);
+           
+            let result = null;
+            let hasExtraRoll = false;
+           
+            if (roll <= 6) {
+                return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
+            } else if (roll <= 8) {
+                result = generateGold(characterLevel, dungeonLevel);
+                hasExtraRoll = rollDie(20) >= 18;
+            } else if (roll <= 10) {
+                result = generatePotion(tier);
+                hasExtraRoll = rollDie(20) >= 18;
+            } else if (roll <= 12) {
+                result = generateSpellConsumable(tier);
+            } else {
+                result = generateGear(tier, guarantee);
+            }
+           
+            if (hasExtraRoll && !guarantee) {
+                const extraLoot = generateSingleLoot(characterLevel, dungeonLevel);
+                return [result, extraLoot].filter(item => item && item.type !== 'no-loot');
+            }
+           
+            return result;
+        }
+
+        function generateLoot() {
+            const characterLevel = parseInt(document.getElementById('characterLevel').value) || 1;
+            const dungeonLevel = parseInt(document.getElementById('dungeonLevel').value) || 1;
+            const numRolls = parseInt(document.getElementById('numRolls').value) || 1;
+            const guarantee = document.getElementById('guarantee').value || null;
+            
+            const results = [];
+            
+            for (let i = 0; i < numRolls; i++) {
+                const loot = generateSingleLoot(characterLevel, dungeonLevel, guarantee);
+                if (Array.isArray(loot)) {
+                    results.push(...loot);
+                } else if (loot) {
+                    results.push(loot);
+                }
+            }
+            
+            displayResults(results);
+        }
+
+        function updateGenerateButton() {
+            const characterLevel = parseInt(document.getElementById('characterLevel').value) || 1;
+            const dungeonLevel = parseInt(document.getElementById('dungeonLevel').value) || 1;
+            const tier = getLootLevel(characterLevel, dungeonLevel);
+            
+            const generateBtn = document.getElementById('generateLootBtn');
+            generateBtn.textContent = `Generate Loot (Tier ${tier})`;
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-loot">No loot.</div>';
+                return;
+            }
+           
+            let html = '';
+            let totalValue = 0;
+           
+            results.forEach(item => {
+                totalValue += item.value || 0;
+                let className = 'loot-item';
+               
+                if (item.type === 'no-loot') {
+                    className += ' nothing';
+                } else if (item.type === 'gold') {
+                    className += ' gold';
+                } else if (item.type === 'potion') {
+                    className += ' potion';
+                } else if (item.type === 'magic-consumable') {
+                    className += ' magic-consumable';
+                } else if (item.isRare) {
+                    className += ' rare';
+                } else if (item.isCursed) {
+                    className += ' cursed';
+                } else if (item.property && item.property.trim() !== '') {
+                    className += ' enchanted';
+                } else {
+                    className += ' mundane';
+                }
+               
+                html += `
+                    <div class="${className}">
+                        <button class="delete-btn" onclick="this.parentElement.remove(); updateTotalValue();">&times;</button>
+                        <button class="copy-btn" onclick="copyLootItem(this);">⧉</button>
+                        <h3>${item.name}</h3>
+                        <div class="loot-properties">${item.property} </div>
+                        <div class="loot-value">Value: ${item.value || 0} gp</div>
+                    </div>
+                `;
+            });
+           
+            html += `<div class="total-value">
+                Total Value: ${totalValue} gp
+            </div>`;
+           
+            resultsDiv.innerHTML = html;
+        }
+
+        function updateTotalValue() {
+            const resultsDiv = document.getElementById('results');
+            const lootItems = resultsDiv.querySelectorAll('.loot-item');
+            let totalValue = 0;
+            
+            lootItems.forEach(item => {
+                const valueText = item.querySelector('.loot-value').textContent;
+                const value = parseInt(valueText.match(/\d+/)[0]) || 0;
+                totalValue += value;
+            });
+            
+            const totalDiv = resultsDiv.querySelector('.total-value');
+            if (totalDiv) {
+                totalDiv.textContent = `Total Value: ${totalValue} gp`;
+            }
+        }
+
+        function copyLootItem(button) {
+            const lootItem = button.parentElement;
+            const name = lootItem.querySelector('h3').textContent;
+            const properties = lootItem.querySelector('.loot-properties').textContent;
+            const value = lootItem.querySelector('.loot-value').textContent;
+            
+            let copyText = name;
+            if (properties && properties.trim() !== '') {
+                copyText += '\n' + properties.trim();
+            }
+            copyText += '\n' + value;
+            
+            navigator.clipboard.writeText(copyText).then(() => {
+                const originalBg = button.style.backgroundColor;
+                const originalColor = button.style.color;
+                button.style.backgroundColor = '#4ca5e6';
+                button.style.color = '#000000';
+                
+                setTimeout(() => {
+                    button.style.backgroundColor = originalBg;
+                    button.style.color = originalColor;           
+                    button.textContent = '⧉';
+                }, 500);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Copy failed. Please select and copy manually.');
+            });
+        }
+
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-pane");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+    // Populate tables when page loads
+        function populateTables() {
+            // Potions table
+            const potionsTableBody = document.querySelector('#potions-table tbody');
+            potionTable.forEach(item => {
+                const row = potionsTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.property}</td>
+                    <td>${item.action}</td>
+                    <td>${item.value}</td>
+
+                `;
+            });
+
+            // Weapons table
+            const weaponsTableBody = document.querySelector('#weapons-table tbody');
+            weaponTable.forEach(item => {
+                const row = weaponsTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.quality || '-'}</td>
+                    <td>${item.class}</td>
+                    <td>${item.damage}</td>
+                    <td>${item.weaponProperties || '-'}</td>
+                    <td>${item.proficiency}</td>
+                    <td>${item.strReq}</td>
+                    <td>${item.dexReq}</td>
+                    <td>${item.prowessBonus}</td>
+                    <td>${item.value}</td>
+                `;
+            });
+
+            // Armor table
+            const armorTableBody = document.querySelector('#armor-table tbody');
+            armorTable.forEach(item => {
+                const row = armorTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.class}</td> 
+                    <td>${item.armorClass}</td>
+                    <td>${item.dexMax}</td>
+                    <td>${item.proficiency}</td>
+                    <td>${item.strReq}</td>
+                    <td>${item.dexReq}</td>
+                    <td>${item.prowessBonus}</td>
+                    <td>${item.value}</td>
+                `;
+            });
+
+            // Spells table
+            const spellsTableBody = document.querySelector('#spells-table tbody');
+            spellTable.forEach(item => {
+                const row = spellsTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.spellLevel}</td>
+                    <td>${item.name}</td>
+                    <td>${item.value}</td>
+                `;
+            });
+
+            // Prefixes table
+            const prefixesTableBody = document.querySelector('#prefixes-table tbody');
+            prefixTable.forEach(item => {
+                const row = prefixesTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.property}</td>
+                    
+                `;
+            });
+
+            // Cursed prefixes table
+            const cursedPrefixesTableBody = document.querySelector('#cursed-prefixes-table tbody');
+            cursedPrefixTable.forEach(item => {
+                const row = cursedPrefixesTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.property}</td>
+                `;
+            });
+
+            // Suffixes table
+            const suffixesTableBody = document.querySelector('#suffixes-table tbody');
+            suffixTable.forEach(item => {
+                const row = suffixesTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.property}</td>
+                `;
+            });
+
+            // Cursed suffixes table
+            const cursedSuffixesTableBody = document.querySelector('#cursed-suffixes-table tbody');
+            cursedSuffixTable.forEach(item => {
+                const row = cursedSuffixesTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.tier}</td>
+                    <td>${item.name}</td>
+                    <td>${item.property}</td>
+                `;
+            });
+
+            // Make all tables sortable
+            initializeTableSorting();
+        }
+
+        // Table sorting functionality
+        function initializeTableSorting() {
+            const tables = document.querySelectorAll('.data-table');
+            
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('th');
+                const tbody = table.querySelector('tbody');
+                
+                // Store original order
+                const originalRows = Array.from(tbody.querySelectorAll('tr'));
+                table.originalRows = originalRows.slice();
+                
+                headers.forEach((header, index) => {
+                    header.classList.add('sortable');
+                    header.setAttribute('data-column', index);
+                    header.setAttribute('data-sort', 'default');
+                    
+                    header.addEventListener('click', function() {
+                        sortTable(table, index, this);
+                    });
+                });
+            });
+        }
+
+        function sortTable(table, columnIndex, headerElement) {
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const currentSort = headerElement.getAttribute('data-sort');
+            
+            // Clear all other headers' sort classes
+            table.querySelectorAll('th').forEach(th => {
+                if (th !== headerElement) {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    th.setAttribute('data-sort', 'default');
+                }
+            });
+            
+            let sortedRows;
+            let newSortState;
+            
+            if (currentSort === 'default') {
+                // Sort ascending (A-Z)
+                sortedRows = rows.slice().sort((a, b) => {
+                    const aValue = getCellValue(a, columnIndex);
+                    const bValue = getCellValue(b, columnIndex);
+                    return compareValues(aValue, bValue, true);
+                });
+                newSortState = 'asc';
+                headerElement.classList.add('sort-asc');
+                headerElement.classList.remove('sort-desc');
+            } else if (currentSort === 'asc') {
+                // Sort descending (Z-A)
+                sortedRows = rows.slice().sort((a, b) => {
+                    const aValue = getCellValue(a, columnIndex);
+                    const bValue = getCellValue(b, columnIndex);
+                    return compareValues(aValue, bValue, false);
+                });
+                newSortState = 'desc';
+                headerElement.classList.add('sort-desc');
+                headerElement.classList.remove('sort-asc');
+            } else {
+                // Return to default order
+                sortedRows = table.originalRows.slice();
+                newSortState = 'default';
+                headerElement.classList.remove('sort-asc', 'sort-desc');
+            }
+            
+            headerElement.setAttribute('data-sort', newSortState);
+            
+            // Clear tbody and append sorted rows
+            tbody.innerHTML = '';
+            sortedRows.forEach(row => tbody.appendChild(row));
+        }
+
+        function getCellValue(row, columnIndex) {
+            const cell = row.cells[columnIndex];
+            return cell ? cell.textContent.trim() : '';
+        }
+
+        function compareValues(a, b, ascending = true) {
+            // Try to parse as numbers first
+            const aNum = parseFloat(a);
+            const bNum = parseFloat(b);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                // Both are numbers
+                return ascending ? aNum - bNum : bNum - aNum;
+            }
+            
+            // Treat as strings
+            const aStr = a.toLowerCase();
+            const bStr = b.toLowerCase();
+            
+            if (ascending) {
+                return aStr < bStr ? -1 : aStr > bStr ? 1 : 0;
+            } else {
+                return aStr > bStr ? -1 : aStr < bStr ? 1 : 0;
+            }
+        }
+
+        // Item Creator functionality
+        let selectedAffixes = [];
+
+        function updateBaseItems() {
+            const itemType = document.getElementById('itemType').value;
+            const baseItemSelect = document.getElementById('baseItem');
+            const table = itemType === 'weapon' ? weaponTable : armorTable;
+            
+            baseItemSelect.innerHTML = '';
+            
+            table.forEach((item, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${item.name} (Tier ${item.tier}) - ${item.value}gp`;
+                baseItemSelect.appendChild(option);
+            });
+            
+            updateAffixOptions();
+            generateCustomItem();
+        }
+
+        function updateQualityOptions() {
+            const quality = document.getElementById('itemQuality').value;
+            const enchantedOptions = document.getElementById('enchanted-options');
+            const rareOptions = document.getElementById('rare-options');
+            
+            enchantedOptions.style.display = quality === 'enchanted' ? 'block' : 'none';
+            rareOptions.style.display = quality === 'rare' ? 'block' : 'none';
+            
+            if (quality === 'rare') {
+                selectedAffixes = [];
+                updateRareAffixesList();
+                updateRareAffixDropdown(); // Update the rare affix dropdown
+            }
+            
+            generateCustomItem();
+        }
+
+        function updateRareAffixDropdown() {
+            const affixType = document.getElementById('addAffixType').value;
+            const affixSelect = document.getElementById('addAffixSelect');
+            const itemType = document.getElementById('itemType').value;
+            
+            affixSelect.innerHTML = '';
+            affixSelect.disabled = !affixType;
+            
+            if (!affixType) {
+                affixSelect.innerHTML = '<option value="">Select affix type first</option>';
+                return;
+            }
+            
+            affixSelect.innerHTML = '<option value="">Choose an affix...</option>';
+            
+            if (affixType === 'prefix') {
+                // Add normal prefixes
+                prefixTable.forEach((prefix, index) => {
+                    if (prefix.type === 'both' || prefix.type === itemType) {
+                        const option = document.createElement('option');
+                        option.value = `normal_${index}`;
+                        option.textContent = `${prefix.name} (T${prefix.tier})`;
+                        affixSelect.appendChild(option);
+                    }
+                });
+                
+                // Add cursed prefixes
+                cursedPrefixTable.forEach((prefix, index) => {
+                    if (prefix.type === 'both' || prefix.type === itemType) {
+                        const option = document.createElement('option');
+                        option.value = `cursed_${index}`;
+                        option.textContent = `${prefix.name} (T${prefix.tier}) (Cursed)`;
+                        affixSelect.appendChild(option);
+                    }
+                });
+            } else if (affixType === 'suffix') {
+                // Add normal suffixes
+                suffixTable.forEach((suffix, index) => {
+                    if (suffix.type === 'both' || suffix.type === itemType) {
+                        const option = document.createElement('option');
+                        option.value = `normal_${index}`;
+                        option.textContent = `${suffix.name} (T${suffix.tier})`;
+                        affixSelect.appendChild(option);
+                    }
+                });
+                
+                // Add cursed suffixes
+                cursedSuffixTable.forEach((suffix, index) => {
+                    if (suffix.type === 'both' || suffix.type === itemType) {
+                        const option = document.createElement('option');
+                        option.value = `cursed_${index}`;
+                        option.textContent = `${suffix.name} (T${suffix.tier}) (Cursed)`;
+                        affixSelect.appendChild(option);
+                    }
+                });
+            }
+        }
+
+        function addChosenAffix() {
+            const affixType = document.getElementById('addAffixType').value;
+            const affixValue = document.getElementById('addAffixSelect').value;
+            
+            if (!affixType || !affixValue) {
+                alert('Please select both affix type and specific affix!');
+                return;
+            }
+            
+            const [type, index] = affixValue.split('_');
+            let affix;
+            let isCursed = false;
+            let isPrefix = affixType === 'prefix';
+            
+            if (affixType === 'prefix') {
+                if (type === 'normal') {
+                    affix = prefixTable[parseInt(index)];
+                } else if (type === 'cursed') {
+                    affix = cursedPrefixTable[parseInt(index)];
+                    isCursed = true;
+                }
+            } else if (affixType === 'suffix') {
+                if (type === 'normal') {
+                    affix = suffixTable[parseInt(index)];
+                } else if (type === 'cursed') {
+                    affix = cursedSuffixTable[parseInt(index)];
+                    isCursed = true;
+                }
+            }
+            
+            if (!affix) {
+                alert('Error finding the selected affix!');
+                return;
+            }
+            
+            // Check if this category is already used
+            if (selectedAffixes.some(selected => selected.category === affix.category)) {
+                alert(`An affix with category "${affix.category}" is already selected!`);
+                return;
+            }
+            
+            selectedAffixes.push({
+                ...affix,
+                isCursed: isCursed,
+                isPrefix: isPrefix
+            });
+            
+            updateRareAffixesList();
+            generateCustomItem();
+            
+            // Reset the dropdowns
+            document.getElementById('addAffixType').value = '';
+            document.getElementById('addAffixSelect').innerHTML = '<option value="">Select affix type first</option>';
+            document.getElementById('addAffixSelect').disabled = true;
+        }
+
+        function updateAffixOptions() {
+            const itemType = document.getElementById('itemType').value;
+            const prefixSelect = document.getElementById('prefixSelect');
+            const suffixSelect = document.getElementById('suffixSelect');
+            
+            // Clear existing options
+            prefixSelect.innerHTML = '<option value="">None</option>';
+            suffixSelect.innerHTML = '<option value="">None</option>';
+            
+            // Populate prefixes (normal first, then cursed)
+            prefixTable.forEach((prefix, index) => {
+                if (prefix.type === 'both' || prefix.type === itemType) {
+                    const option = document.createElement('option');
+                    option.value = `normal_${index}`;
+                    option.textContent = `${prefix.name} (T${prefix.tier})`;
+                    prefixSelect.appendChild(option);
+                }
+            });
+            
+            cursedPrefixTable.forEach((prefix, index) => {
+                if (prefix.type === 'both' || prefix.type === itemType) {
+                    const option = document.createElement('option');
+                    option.value = `cursed_${index}`;
+                    option.textContent = `${prefix.name} (T${prefix.tier}) (Cursed)`;
+                    prefixSelect.appendChild(option);
+                }
+            });
+            
+            // Populate suffixes (normal first, then cursed)
+            suffixTable.forEach((suffix, index) => {
+                if (suffix.type === 'both' || suffix.type === itemType) {
+                    const option = document.createElement('option');
+                    option.value = `normal_${index}`;
+                    option.textContent = `${suffix.name} (T${suffix.tier})`;
+                    suffixSelect.appendChild(option);
+                }
+            });
+            
+            cursedSuffixTable.forEach((suffix, index) => {
+                if (suffix.type === 'both' || suffix.type === itemType) {
+                    const option = document.createElement('option');
+                    option.value = `cursed_${index}`;
+                    option.textContent = `${suffix.name} (T${suffix.tier}) (Cursed)`;
+                    suffixSelect.appendChild(option);
+                }
+            });
+        }
+
+        function addRandomAffix() {
+            const itemType = document.getElementById('itemType').value;
+            const isArmor = itemType === 'armor';
+            
+            // Combine all affix tables
+            const allAffixes = [...prefixTable, ...suffixTable, ...cursedPrefixTable, ...cursedSuffixTable];
+            const validAffixes = allAffixes.filter(affix => 
+                (affix.type === 'both' || (isArmor && affix.type === 'armor') || (!isArmor && affix.type === 'weapon')) &&
+                !selectedAffixes.some(selected => selected.category === affix.category)
+            );
+            
+            if (validAffixes.length === 0) {
+                alert('No more valid affixes available!');
+                return;
+            }
+            
+            const randomAffix = validAffixes[Math.floor(Math.random() * validAffixes.length)];
+            const isCursed = cursedPrefixTable.includes(randomAffix) || cursedSuffixTable.includes(randomAffix);
+            const isPrefix = prefixTable.includes(randomAffix) || cursedPrefixTable.includes(randomAffix);
+            
+            selectedAffixes.push({
+                ...randomAffix,
+                isCursed: isCursed,
+                isPrefix: isPrefix
+            });
+            
+            updateRareAffixesList();
+            generateCustomItem();
+        }
+
+        function removeAffix(index) {
+            selectedAffixes.splice(index, 1);
+            updateRareAffixesList();
+            generateCustomItem();
+        }
+
+        function updateRareAffixesList() {
+            const affixList = document.getElementById('rareAffixes');
+            affixList.innerHTML = '';
+            
+            selectedAffixes.forEach((affix, index) => {
+                const affixDiv = document.createElement('div');
+                affixDiv.className = 'affix-item';
+                affixDiv.innerHTML = `
+                    <span>${affix.name}${affix.isCursed ? ' (Cursed)' : ''}</span>
+                    <button class="remove-affix" onclick="removeAffix(${index})">×</button>
+                `;
+                affixList.appendChild(affixDiv);
+            });
+            
+            if (selectedAffixes.length === 0) {
+                affixList.innerHTML = '<div style="text-align: center; color: #888; font-style: italic;">No affixes selected</div>';
+            }
+        }
+
+        function generateCustomItem() {
+            const itemType = document.getElementById('itemType').value;
+            const baseItemIndex = parseInt(document.getElementById('baseItem').value) || 0;
+            const quality = document.getElementById('itemQuality').value;
+
+            
+            const baseTable = itemType === 'weapon' ? weaponTable : armorTable;
+            const baseItem = baseTable[baseItemIndex];
+            
+            if (!baseItem) return null;
+            
+            let item = {
+                name: baseItem.name,
+                property: "",
+                value: baseItem.value,
+                multiplier: 1,
+                type: 'gear'
+            };
+            
+            let className = 'created-item';
+            let isCursed = false;
+            
+            if (quality === 'enchanted') {
+                const prefixValue = document.getElementById('prefixSelect').value;
+                const suffixValue = document.getElementById('suffixSelect').value;
+                
+                let properties = [];
+                
+                if (prefixValue) {
+                    const [type, index] = prefixValue.split('_');
+                    let prefix;
+                    
+                    if (type === 'normal') {
+                        prefix = prefixTable[parseInt(index)];
+                    } else if (type === 'cursed') {
+                        prefix = cursedPrefixTable[parseInt(index)];
+                        isCursed = true;
+                    }
+                    
+                    if (prefix) {
+                        item.name = `${prefix.name} ${item.name}`;
+                        properties.push(`• ${prefix.property}`);
+                        item.multiplier += prefix.multiplier;
+                    }
+                }
+                
+                if (suffixValue) {
+                    const [type, index] = suffixValue.split('_');
+                    let suffix;
+                    
+                    if (type === 'normal') {
+                        suffix = suffixTable[parseInt(index)];
+                    } else if (type === 'cursed') {
+                        suffix = cursedSuffixTable[parseInt(index)];
+                        isCursed = true;
+                    }
+                    
+                    if (suffix) {
+                        item.name = `${item.name} ${suffix.name}`;
+                        properties.push(`• ${suffix.property}`);
+                        item.multiplier += suffix.multiplier;
+                    }
+                }
+                
+                item.property = properties.join('<br>');
+                className += isCursed ? ' preview-cursed' : ' preview-enchanted';
+                if (properties.length > 0) item.value += 15;
+                
+            } else if (quality === 'rare') {
+                const name1 = document.getElementById('rareName1').value;
+                const name2 = document.getElementById('rareName2').value;
+                
+                item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
+                item.isRare = true;
+                className += ' preview-rare';
+                
+                let properties = [];
+                selectedAffixes.forEach(affix => {
+                    properties.push(`• ${affix.property}`);
+                    item.multiplier += affix.multiplier;
+                    if (affix.isCursed) isCursed = true;
+                });
+                
+                item.property = properties.join('<br>');
+                if (isCursed) className = className.replace('preview-rare', 'preview-cursed');
+                
+            } else {
+                className += ' preview-mundane';
+            }
+            
+            // Set cursed flag for proper styling in results
+            if (isCursed) item.isCursed = true;
+            if (quality === 'rare') item.isRare = true;
+            
+            // Calculate final value
+            item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
+            
+            // Display the preview
+            updateItemPreview(item, className);
+            
+            // Return the item for adding to results
+            return item;
+        }
+
+        function updateItemPreview(item, className) {
+            const previewDiv = document.getElementById('createdItem');
+            previewDiv.className = className;
+            previewDiv.innerHTML = `
+                <div class="preview-item-name">${item.name}</div>
+                <div class="preview-item-properties">${item.property || 'No special properties'}</div>
+                <div class="preview-item-value">Value: ${item.value} gp</div>
+            `;
+        }
+
+        function addCustomItemToResults() {
+            const customItem = generateCustomItem();
+            if (!customItem) {
+                alert('Please configure an item first!');
+                return;
+            }
+            
+            // Get current results or initialize empty array
+            const resultsDiv = document.getElementById('results');
+            let currentItems = [];
+            
+            // If there are existing results, extract them
+            const existingItems = resultsDiv.querySelectorAll('.loot-item');
+            existingItems.forEach(itemElement => {
+                const name = itemElement.querySelector('h3').textContent;
+                const properties = itemElement.querySelector('.loot-properties').textContent.trim();
+                const valueText = itemElement.querySelector('.loot-value').textContent;
+                const value = parseInt(valueText.match(/\d+/)[0]) || 0;
+                
+                // Determine item type from CSS classes
+                let type = 'gear';
+                if (itemElement.classList.contains('gold')) type = 'gold';
+                else if (itemElement.classList.contains('potion')) type = 'potion';
+                else if (itemElement.classList.contains('magic-consumable')) type = 'magic-consumable';
+                
+                const item = {
+                    name: name,
+                    property: properties,
+                    value: value,
+                    type: type,
+                    isRare: itemElement.classList.contains('rare'),
+                    isCursed: itemElement.classList.contains('cursed')
+                };
+                
+                currentItems.push(item);
+            });
+            
+            // Add the new custom item
+            currentItems.push(customItem);
+            
+            // Re-display all results
+            displayResults(currentItems);
+            
+            // Switch to loot roller tab to show the results
+            document.getElementById('loot-roller').classList.add('active');
+            document.getElementById('item-creator').classList.remove('active');
+            document.querySelector('.tab-btn[onclick="openTab(event, \'loot-roller\')"]').classList.add('active');
+            document.querySelector('.tab-btn[onclick="openTab(event, \'item-creator\')"]').classList.remove('active');
+            
+            // Show success message
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Added to Loot!';
+            button.style.background = '#4ca5e6';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 1500);
+        }
+
+        function resetCreator() {
+            document.getElementById('itemType').value = 'weapon';
+            document.getElementById('itemQuality').value = 'mundane';
+            document.getElementById('prefixSelect').value = '';
+            document.getElementById('suffixSelect').value = '';
+            selectedAffixes = [];
+            
+            updateBaseItems();
+            updateQualityOptions();
+        }
+
+        function initializeCreator() {
+            // Populate rare name selects
+            const rareName1Select = document.getElementById('rareName1');
+            const rareName2Select = document.getElementById('rareName2');
+            
+            rareName1.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                rareName1Select.appendChild(option);
+            });
+            
+            rareName2.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                rareName2Select.appendChild(option);
+            });
+            
+            // Set default rare names
+            rareName1Select.value = rareName1[0];
+            rareName2Select.value = rareName2[0];
+            
+            // Initialize base items and options
+            updateBaseItems();
+            updateQualityOptions();
+            
+            // Add event listeners for auto-preview
+            document.getElementById('baseItem').addEventListener('change', generateCustomItem);
+            document.getElementById('prefixSelect').addEventListener('change', generateCustomItem);
+            document.getElementById('suffixSelect').addEventListener('change', generateCustomItem);
+            document.getElementById('rareName1').addEventListener('change', generateCustomItem);
+            document.getElementById('rareName2').addEventListener('change', generateCustomItem);
+            document.getElementById('itemType').addEventListener('change', updateRareAffixDropdown);
+            document.getElementById('addAffixType').addEventListener('change', updateRareAffixDropdown);
+        }
+
+        // Initialize tables when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            populateTables();
+            initializeCreator();
+            updateGenerateButton(); // Set initial button text
+            
+            // Add event listeners for live tier updates
+            document.getElementById('characterLevel').addEventListener('input', updateGenerateButton);
+            document.getElementById('dungeonLevel').addEventListener('input', updateGenerateButton);
+        });
+
 const potionTable = [
-{min:1, max:10, name:"Small Healing Potion", healingSurge:"1", spellPoints:"-", featureRestore:"-", actionEcon:"Bonus Action", value:25}, 
-{min:11, max:20, name:"Small Mana Potion", healingSurge:"-", spellPoints:"2d4+2", featureRestore:"2 Short Rest uses", actionEcon:"Bonus Action", value:40}, 
-{min:21, max:24, name:"Small Rejuvination Potion", healingSurge:"1", spellPoints:"1d4+1", featureRestore:"1 Short Rest uses", actionEcon:"Action", value:100}, 
-{min:25, max:39, name:"Large Healing Potion", healingSurge:"3", spellPoints:"-", featureRestore:"-", actionEcon:"Bonus Action", value:350}, 
-{min:40, max:54, name:"Large Mana Potion", healingSurge:"-", spellPoints:"4d4+4", featureRestore:"4 Short Rest uses", actionEcon:"Bonus Action", value:560}, 
-{min:55, max:58, name:"Large Rejuvination Potion", healingSurge:"2", spellPoints:"2d4+2", featureRestore:"2 Short Rest uses", actionEcon:"Action", value:980}, 
-{min:59, max:60, name:"Full Rejuvination Potion", healingSurge:"All", spellPoints:"All", featureRestore:"All", actionEcon:"Action", value:1200}, 
-	];
-const spellTables = {
-	cantrip: [
-{name: "Acid Splash (C)", value: 10},
-{name: "Blade Ward (C)", value: 10},
-{name: "Booming Blade (C)", value: 10},
-{name: "Chill Touch (C)", value: 10},
-{name: "Eldritch Blast (C)", value: 10},
-{name: "Fire Bolt (C)", value: 10},
-{name: "Frostbite (C)", value: 10},
-{name: "Green-Flame Blade (C)", value: 10},
-{name: "Guidance (C)", value: 10},
-{name: "Gust (C)", value: 10},
-{name: "Infestation (C)", value: 10},
-{name: "Lightning Lure (C)", value: 10},
-{name: "Mage Hand (C)", value: 10},
-{name: "Magic Stone (C)", value: 10},
-{name: "Mind Sliver (C)", value: 10},
-{name: "Poison Spray (C)", value: 10},
-{name: "Primal Savagery (C)", value: 10},
-{name: "Produce Flame (C)", value: 10},
-{name: "Ray of Frost (C)", value: 10},
-{name: "Sacred Flame (C)", value: 10},
-{name: "Shillelagh (C)", value: 10},
-{name: "Shocking Grasp (C)", value: 10},
-{name: "Spare the Dying (C)", value: 10},
-{name: "Sword Burst (C)", value: 10},
-{name: "Thorn Whip (C)", value: 10},
-{name: "Thunderclap (C)", value: 10},
-{name: "Toll the Dead (C)", value: 10},
-{name: "True Strike (C)", value: 10},
-{name: "Vicious Mockery (C)", value: 10},
-{name: "Word of Radiance (C)", value: 10}
-  ],
-  level1: [
-{name: "Armor of Agathys (1)", value: 60},
-{name: "Arms of Hadar (1)", value: 60},
-{name: "Bane (1)", value: 60},
-{name: "Bless (1)", value: 60},
-{name: "Burning Hands (1)", value: 60},
-{name: "Catapult (1)", value: 60},
-{name: "Chaos Bolt (1)", value: 60},
-{name: "Chromatic Orb (1)", value: 60},
-{name: "Compelled Duel (1)", value: 60},
-{name: "Cure Wounds (1)", value: 60},
-{name: "Detect Magic (1)", value: 60},
-{name: "Detect Poison and Disease (1)", value: 60},
-{name: "Dissonant Whispers (1)", value: 60},
-{name: "Divine Favor (1)", value: 60},
-{name: "Earth Tremor (1)", value: 60},
-{name: "Ensnaring Strike (1)", value: 60},
-{name: "Entangle (1)", value: 60},
-{name: "Expeditious Retreat (1)", value: 60},
-{name: "Faerie Fire (1)", value: 60},
-{name: "False Life (1)", value: 60},
-{name: "Find Familiar (1)", value: 60},
-{name: "Fog Cloud (1)", value: 60},
-{name: "Frost Fingers (1)", value: 60},
-{name: "Gift of Alacrity (1)", value: 60},
-{name: "Goodberry (1)", value: 60},
-{name: "Grease (1)", value: 60},
-{name: "Guiding Bolt (1)", value: 60},
-{name: "Hail of Thorns (1)", value: 60},
-{name: "Healing Word (1)", value: 60},
-{name: "Hellish Rebuke (1)", value: 60},
-{name: "Heroism (1)", value: 60},
-{name: "Hex (1)", value: 60},
-{name: "Hunter's Mark (1)", value: 60},
-{name: "Ice Knife (1)", value: 60},
-{name: "Inflict Wounds (1)", value: 60},
-{name: "Mage Armor (1)", value: 60},
-{name: "Magic Missile (1)", value: 60},
-{name: "Protection from Evil and Good (1)", value: 60},
-{name: "Ray of Sickness (1)", value: 60},
-{name: "Sanctuary (1)", value: 60},
-{name: "Searing Smite (1)", value: 60},
-{name: "Shield (1)", value: 60},
-{name: "Shield of Faith (1)", value: 60},
-{name: "Sleep (1)", value: 60},
-{name: "Tasha's Caustic Brew (1)", value: 60},
-{name: "Tasha's Hideous Laughter (1)", value: 60},
-{name: "Thunderous Smite (1)", value: 60},
-{name: "Thunderwave (1)", value: 60},
-{name: "Wrathful Smite (1)", value: 60},
-{name: "Zephyr Strike (1)", value: 60}
-  ],
-  level2: [
-{name: "Aganazzar's Scorcher (2)", value: 120},
-{name: "Aid (2)", value: 120},
-{name: "Barkskin (2)", value: 120},
-{name: "Blindness/Deafness (2)", value: 120},
-{name: "Blur (2)", value: 120},
-{name: "Branding Smite (2)", value: 120},
-{name: "Calm Emotions (2)", value: 120},
-{name: "Cloud of Daggers (2)", value: 120},
-{name: "Cordon of Arrows (2)", value: 120},
-{name: "Crown of Madness (2)", value: 120},
-{name: "Darkness (2)", value: 120},
-{name: "Darkvision (2)", value: 120},
-{name: "Dragon's Breath (2)", value: 120},
-{name: "Enlarge/Reduce (2)", value: 120},
-{name: "Flame Blade (2)", value: 120},
-{name: "Flaming Sphere (2)", value: 120},
-{name: "Healing Spirit (2)", value: 120},
-{name: "Heat Metal (2)", value: 120},
-{name: "Hold Person (2)", value: 120},
-{name: "Invisibility (2)", value: 120},
-{name: "Kinetic Jaunt (2)", value: 120},
-{name: "Lesser Restoration (2)", value: 120},
-{name: "Magic Weapon (2)", value: 120},
-{name: "Melf's Acid Arrow (2)", value: 120},
-{name: "Mind Spike (2)", value: 120},
-{name: "Mirror Image (2)", value: 120},
-{name: "Misty Step (2)", value: 120},
-{name: "Phantasmal Force (2)", value: 120},
-{name: "Prayer of Healing (2)", value: 120},
-{name: "Pyrotechnics (2)", value: 120},
-{name: "Ray of Enfeeblement (2)", value: 120},
-{name: "Scorching Ray (2)", value: 120},
-{name: "Shadow Blade (2)", value: 120},
-{name: "Shatter (2)", value: 120},
-{name: "Silence (2)", value: 120},
-{name: "Spike Growth (2)", value: 120},
-{name: "Spiritual Weapon (2)", value: 120},
-{name: "Tasha's Mind Whip (2)", value: 120},
-{name: "Web (2)", value: 120},
-{name: "Wither and Bloom (2)", value: 120}
-  ],
-  level3: [
-{name: "Animate Dead (3)", value: 200},
-{name: "Aura of Vitality (3)", value: 200},
-{name: "Beacon of Hope (3)", value: 200},
-{name: "Blinding Smite (3)", value: 200},
-{name: "Blink (3)", value: 200},
-{name: "Conjure Barrage (3)", value: 200},
-{name: "Counterspell (3)", value: 200},
-{name: "Crusader's Mantle (3)", value: 200},
-{name: "Daylight (3)", value: 200},
-{name: "Dispel Magic (3)", value: 200},
-{name: "Elemental Weapon (3)", value: 200},
-{name: "Erupting Earth (3)", value: 200},
-{name: "Fear (3)", value: 200},
-{name: "Fireball (3)", value: 200},
-{name: "Flame Arrows (3)", value: 200},
-{name: "Fly (3)", value: 200},
-{name: "Glyph of Warding (3)", value: 200},
-{name: "Haste (3)", value: 200},
-{name: "Hunger Of Hadar (3)", value: 200},
-{name: "Hypnotic Pattern (3)", value: 200},
-{name: "Intellect Fortress (3)", value: 200},
-{name: "Life Transference (3)", value: 200},
-{name: "Lightning Arrow (3)", value: 200},
-{name: "Lightning Bolt (3)", value: 200},
-{name: "Major Image (3)", value: 200},
-{name: "Mass Healing Word (3)", value: 200},
-{name: "Meld into Stone (3)", value: 200},
-{name: "Melf's Minute Meteors (3)", value: 200},
-{name: "Pulse Wave (3)", value: 200},
-{name: "Remove Curse (3)", value: 200},
-{name: "Revivify (3)", value: 200},
-{name: "Slow (3)", value: 200},
-{name: "Spirit Guardians (3)", value: 200},
-{name: "Summon Lesser Demons (3)", value: 200},
-{name: "Summon Shadowspawn (3)", value: 200},
-{name: "Summon Undead (3)", value: 200},
-{name: "Thunder Step (3)", value: 200},
-{name: "Vampiric Touch (3)", value: 200},
-{name: "Wall of Water (3)", value: 200},
-{name: "Wind Wall (3)", value: 200}
-  ],
-  level4: [
-{name: "Aura of Life (4)", value: 320},
-{name: "Aura of Purity (4)", value: 320},
-{name: "Banishment (4)", value: 320},
-{name: "Blight (4)", value: 320},
-{name: "Confusion (4)", value: 320},
-{name: "Conjure Minor Elementals (4)", value: 320},
-{name: "Death Ward (4)", value: 320},
-{name: "Dimension Door (4)", value: 320},
-{name: "Dominate Beast (4)", value: 320},
-{name: "Evard's Black Tentacles (4)", value: 320},
-{name: "Fire Shield (4)", value: 320},
-{name: "Grasping Vine (4)", value: 320},
-{name: "Gravity Sinkhole (4)", value: 320},
-{name: "Greater Invisibility (4)", value: 320},
-{name: "Guardian of Faith (4)", value: 320},
-{name: "Guardian of Nature (4)", value: 320},
-{name: "Otiluke's Resilient Sphere (4)", value: 320},
-{name: "Phantasmal Killer (4)", value: 320},
-{name: "Polymorph (4)", value: 320},
-{name: "Raulothim's Psychic Lance (4)", value: 320},
-{name: "Shadow Of Moil (4)", value: 320},
-{name: "Staggering Smite (4)", value: 320},
-{name: "Stone Shape (4)", value: 320},
-{name: "Stoneskin (4)", value: 320},
-{name: "Storm Sphere (4)", value: 320},
-{name: "Summon Aberration (4)", value: 320},
-{name: "Summon Construct (4)", value: 320},
-{name: "Summon Elemental (4)", value: 320},
-{name: "Summon Greater Demon (4)", value: 320},
-{name: "Wall of Fire (4)", value: 320}
-  ],
-  level5: [
-{name: "Animate Objects (5)", value: 640},
-{name: "Banishing Smite (5)", value: 640},
-{name: "Bigby's Hand (5)", value: 640},
-{name: "Circle of Power (5)", value: 640},
-{name: "Cloudkill (5)", value: 640},
-{name: "Cone of Cold (5)", value: 640},
-{name: "Conjure Elemental (5)", value: 640},
-{name: "Conjure Volley (5)", value: 640},
-{name: "Contagion (5)", value: 640},
-{name: "Danse Macabre (5)", value: 640},
-{name: "Dawn (5)", value: 640},
-{name: "Destructive Wave (5)", value: 640},
-{name: "Dispel Evil and Good (5)", value: 640},
-{name: "Far Step (5)", value: 640},
-{name: "Flame Strike (5)", value: 640},
-{name: "Hold Monster (5)", value: 640},
-{name: "Holy Weapon (5)", value: 640},
-{name: "Immolation (5)", value: 640},
-{name: "Insect Plague (5)", value: 640},
-{name: "Negative Energy Flood (5)", value: 640},
-{name: "Passwall (5)", value: 640},
-{name: "Steel Wind Strike (5)", value: 640},
-{name: "Summon Celestial (5)", value: 640},
-{name: "Swift Quiver (5)", value: 640},
-{name: "Synaptic Static (5)", value: 640},
-{name: "Telekinesis (5)", value: 640},
-{name: "Temporal Shunt (5)", value: 640},
-{name: "Wall of Force (5)", value: 640},
-{name: "Wall of Light (5)", value: 640},
-{name: "Wall of Stone (5)", value: 640}
-  ],
-  level6: [
-{name: "Blade Barrier (6)", value: 1280},
-{name: "Bones of the Earth (6)", value: 1280},
-{name: "Chain Lightning (6)", value: 1280},
-{name: "Circle of Death (6)", value: 1280},
-{name: "Disintegrate (6)", value: 1280},
-{name: "Gravity Fissure (6)", value: 1280},
-{name: "Harm (6)", value: 1280},
-{name: "Heal (6)", value: 1280},
-{name: "Investiture of Flame (6)", value: 1280},
-{name: "Investiture of Ice (6)", value: 1280},
-{name: "Investiture of Stone (6)", value: 1280},
-{name: "Mental Prison (6)", value: 1280},
-{name: "Scatter (6)", value: 1280},
-{name: "Soul Cage (6)", value: 1280},
-{name: "Summon Fiend (6)", value: 1280},
-{name: "Sunbeam (6)", value: 1280},
-{name: "Tasha's Otherworldly Guise (6)", value: 1280},
-{name: "True Seeing (6)", value: 1280},
-{name: "Wall of Ice (6)", value: 1280},
-{name: "Wall of Thorns (6)", value: 1280}
-  ],
-  level7: [
-{name: "Crown of Stars (7)", value: 2560},
-{name: "Finger of Death (7)", value: 2560},
-{name: "Fire Storm (7)", value: 2560},
-{name: "Forcecage (7)", value: 2560},
-{name: "Mordenkainen's Sword (7)", value: 2560},
-{name: "Power Word: Pain (7)", value: 2560},
-{name: "Prismatic Spray (7)", value: 2560},
-{name: "Regenerate (7)", value: 2560},
-{name: "Reverse Gravity (7)", value: 2560},
-{name: "Whirlwind (7)", value: 2560}
-  ],
-  level8: [
-{name: "Abi-Dalzim's Horrid Wilting (8)", value: 5120},
-{name: "Animal Shapes (8)", value: 5120},
-{name: "Antipathy/Sympathy (8)", value: 5120},
-{name: "Dark Star (8)", value: 5120},
-{name: "Dominate Monster (8)", value: 5120},
-{name: "Earthquake (8)", value: 5120},
-{name: "Holy Aura (8)", value: 5120},
-{name: "Mind Blank (8)", value: 5120},
-{name: "Power Word: Stun (8)", value: 5120},
-{name: "Sunburst (8)", value: 5120}
-  ],
-  level9: [
-{name: "Blade of Disaster (9)", value: 10000},
-{name: "Foresight (9)", value: 10000},
-{name: "Invulnerability (9)", value: 10000},
-{name: "Mass Heal (9)", value: 10000},
-{name: "Meteor Swarm (9)", value: 10000},
-{name: "Prismatic Wall (9)", value: 10000},
-{name: "Psychic Scream (9)", value: 10000},
-{name: "Ravenous Void (9)", value: 10000},
-{name: "Time Stop (9)", value: 10000},
-{name: "Wish (9)", value: 10000}
-]
-}
-const weaponTable = [
-{min:1, max:4, name:"Club", class:"Club", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"-", dexReq:"-", weaponProperties:"Light", masteryBonus:"-", value:2}, 
-{min:5, max:9, name:"Dagger", class:"Dagger", damage:"1d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Finesse, Light, Range (20/60)", masteryBonus:"Wide Critical", value:5}, 
-{min:10, max:13, name:"Greatclub", class:"Greatclub", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"Two-handed", masteryBonus:"-", value:5}, 
-{min:14, max:17, name:"Handaxe", class:"Handaxe", damage:"1d6 Slashing", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:8}, 
-{min:18, max:21, name:"Javelin", class:"Javelin", damage:"1d6 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Range (30/120)", masteryBonus:"-", value:5}, 
-{min:22, max:25, name:"Light Hammer", class:"Light Hammer", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:6}, 
-{min:26, max:30, name:"Mace", class:"Mace", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:10}, 
-{min:31, max:34, name:"Metal Knuckles", class:"Metal Knuckles", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"-", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:8}, 
-{min:35, max:38, name:"Quarterstaff", class:"Quarterstaff", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Versatile (1d8)", masteryBonus:"Hinder", value:4}, 
-{min:39, max:42, name:"Sickle", class:"Sickle", damage:"1d4 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Light", masteryBonus:"Bleed", value:6}, 
-{min:43, max:46, name:"Spear", class:"Spear", damage:"1d6 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Range (20/60), Versatile (1d8)", masteryBonus:"-", value:6}, 
-{min:47, max:50, name:"Light Crossbow", class:"Light Crossbow", damage:"1d4 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"11", weaponProperties:"Thrown (20/60)", masteryBonus:"Debilitate", value:25}, 
-{min:51, max:54, name:"Dart", class:"Dart", damage:"1d4 Piercing", proficiency:"Simple Ranged", strReq:"9", dexReq:"15", weaponProperties:"Loading, Two-handed, Range (80/320)", masteryBonus:"Aim", value:2}, 
-{min:55, max:59, name:"Shortbow", class:"Shortbow", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"13", weaponProperties:"Range, Two-handed, (80/320)", masteryBonus:"-", value:35}, 
-{min:60, max:63, name:"Sling", class:"Sling", damage:"1d6 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"11", weaponProperties:"Range (30/120)", masteryBonus:"-", value:200}, 
-{min:64, max:72, name:"Battleaxe", class:"Battleaxe", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"Versatile (1d10)", masteryBonus:"Cleave", value:250}, 
-{min:73, max:80, name:"Flail", class:"Flail", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"-", masteryBonus:"Brutal", value:300}, 
-{min:81, max:88, name:"Glaive", class:"Glaive", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:400}, 
-{min:89, max:97, name:"Greataxe", class:"Greataxe", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"-", weaponProperties:"Heavy, Two-handed,", masteryBonus:"Cleave", value:500}, 
-{min:98, max:105, name:"Greatsword", class:"Greatsword", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"13", weaponProperties:"Heavy, Two-handed", masteryBonus:"Debilitate", value:600}, 
-{min:106, max:113, name:"Halberd", class:"Halberd", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:400}, 
-{min:114, max:121, name:"Lance", class:"Lance", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"13", weaponProperties:"Reach", masteryBonus:"Skewer", value:350}, 
-{min:122, max:130, name:"Longsword", class:"Longsword", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"13", dexReq:"11", weaponProperties:"Versatile (1d10)", masteryBonus:"Debilitate", value:300}, 
-{min:131, max:138, name:"Maul", class:"Maul", damage:"2d6 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Heavy, Two-handed", masteryBonus:"Stagger", value:350}, 
-{min:139, max:146, name:"Morningstar", class:"Morningstar", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"-", masteryBonus:"Bleed", value:325}, 
-{min:147, max:154, name:"Pike", class:"Pike", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:225}, 
-{min:155, max:162, name:"Rapier", class:"Rapier", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"15", weaponProperties:"Finesse", masteryBonus:"-", value:400}, 
-{min:163, max:170, name:"Scimitar", class:"Scimitar", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"11", dexReq:"14", weaponProperties:"Finesse, Light,", masteryBonus:"Wide Critical", value:350}, 
-{min:171, max:178, name:"Scythe", class:"Scythe", damage:"3d4 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"15", weaponProperties:"Heavy, Two-handed", masteryBonus:"Cleave", value:450}, 
-{min:179, max:187, name:"Shortsword", class:"Shortsword", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"11", dexReq:"-", weaponProperties:"Finesse, Light", masteryBonus:"Bleed", value:300}, 
-{min:188, max:195, name:"Trident", class:"Trident", damage:"1d6 Piercing", proficiency:"Martial Melee", strReq:"13", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d8)", masteryBonus:"Brutal", value:275}, 
-{min:196, max:204, name:"Warhammer", class:"Warhammer", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"Versatile (1d10)", masteryBonus:"Stagger", value:350}, 
-{min:205, max:212, name:"War pick", class:"War pick", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"-", weaponProperties:"-", masteryBonus:"Sunder", value:250}, 
-{min:213, max:220, name:"Whip", class:"Whip", damage:"1d4 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"15", weaponProperties:"Finesse, Reach", masteryBonus:"Hinder", value:225}, 
-{min:221, max:228, name:"Blowgun", class:"Blowgun", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"13", weaponProperties:"Loading, Two-handed, Range (25/100)", masteryBonus:"Aim", value:200}, 
-{min:229, max:238, name:"Hand Crossbow", class:"Hand Crossbow", damage:"1d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"19", weaponProperties:"Light, Loading, Range (30/120)", masteryBonus:"Wide Critical", value:500}, 
-{min:239, max:246, name:"Heavy Crossbow", class:"Heavy Crossbow", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"13", dexReq:"15", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", masteryBonus:"Aim", value:600}, 
-{min:247, max:256, name:"Longbow", class:"Longbow", damage:"1d4 Piercing", proficiency:"Martial Ranged", strReq:"11", dexReq:"17", weaponProperties:"Heavy, Two-handed, Range (150/600)", masteryBonus:"Stagger", value:750}, 
-{min:257, max:263, name:"Cudgel", class:"Club", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light", masteryBonus:"-", value:225}, 
-{min:264, max:272, name:"Dirk", class:"Dagger", damage:"2d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Finesse, Light, Range (20/60)", masteryBonus:"Wide Critical", value:250}, 
-{min:273, max:279, name:"Gnarled Club", class:"Greatclub", damage:"1d12 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Two-handed", masteryBonus:"-", value:230}, 
-{min:280, max:286, name:"Hatchet", class:"Handaxe", damage:"1d8 Slashing", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:250}, 
-{min:287, max:293, name:"Harpoon", class:"Javelin", damage:"1d8 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Range (30/120)", masteryBonus:"-", value:300}, 
-{min:294, max:300, name:"Knobkerrie", class:"Light Hammer", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:225}, 
-{min:301, max:309, name:"Mallet", class:"Mace", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:225}, 
-{min:310, max:316, name:"Claws", class:"Metal Knuckles", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:325}, 
-{min:317, max:323, name:"War Staff", class:"Quarterstaff", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Versatile (1d10)", masteryBonus:"Hinder", value:350}, 
-{min:324, max:330, name:"Hand Scythe", class:"Sickle", damage:"1d6 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Light", masteryBonus:"Bleed", value:275}, 
-{min:331, max:339, name:"Mancatcher", class:"Spear", damage:"1d8 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Range (20/60), Versatile (1d10)", masteryBonus:"-", value:400}, 
-{min:340, max:346, name:"Arbalest", class:"Light Crossbow", damage:"1d6 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"12", weaponProperties:"Thrown (20/60)", masteryBonus:"Debilitate", value:700}, 
-{min:347, max:353, name:"Shuriken", class:"Dart", damage:"1d6 Piercing", proficiency:"Simple Ranged", strReq:"10", dexReq:"16", weaponProperties:"Loading, Two-handed, Range (80/320)", masteryBonus:"Aim", value:225}, 
-{min:354, max:362, name:"Horse Bow", class:"Shortbow", damage:"1d10 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Range, Two-handed, (80/320)", masteryBonus:"-", value:500}, 
-{min:363, max:369, name:"Hurler", class:"Sling", damage:"1d8 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"12", weaponProperties:"Range (30/120)", masteryBonus:"-", value:1000}, 
-{min:370, max:383, name:"Bearded Axe", class:"Battleaxe", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Versatile (1d12)", masteryBonus:"Cleave", value:1050}, 
-{min:384, max:394, name:"Shredder", class:"Flail", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"-", masteryBonus:"Brutal", value:1100}, 
-{min:395, max:405, name:"Bardiche", class:"Glaive", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:1200}, 
-{min:406, max:419, name:"Executioner", class:"Greataxe", damage:"2d8 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Heavy, Two-handed,", masteryBonus:"Cleave", value:1250}, 
-{min:420, max:433, name:"Claymore", class:"Greatsword", damage:"2d8 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"14", weaponProperties:"Heavy, Two-handed", masteryBonus:"Debilitate", value:1300}, 
-{min:434, max:444, name:"Poleaxe", class:"Halberd", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:1200}, 
-{min:445, max:455, name:"Ranseur", class:"Lance", damage:"2d8 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"14", weaponProperties:"Reach", masteryBonus:"Skewer", value:1150}, 
-{min:456, max:469, name:"Broad Sword", class:"Longsword", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"14", dexReq:"12", weaponProperties:"Versatile (1d12)", masteryBonus:"Debilitate", value:1050}, 
-{min:470, max:480, name:"Sledge", class:"Maul", damage:"2d8 Bludgeoning", proficiency:"Martial Melee", strReq:"19", dexReq:"-", weaponProperties:"Heavy, Two-handed", masteryBonus:"Stagger", value:1000}, 
-{min:481, max:491, name:"Flanged Mace", class:"Morningstar", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"-", masteryBonus:"Bleed", value:1100}, 
-{min:492, max:502, name:"Partisan", class:"Pike", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:1150}, 
-{min:503, max:513, name:"Spadroon", class:"Rapier", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"16", weaponProperties:"Finesse", masteryBonus:"-", value:1200}, 
-{min:514, max:524, name:"Sabre", class:"Scimitar", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"15", weaponProperties:"Finesse, Light,", masteryBonus:"Wide Critical", value:1200}, 
-{min:525, max:535, name:"Giant Thresher", class:"Scythe", damage:"4d4 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"15", weaponProperties:"Heavy, Two-handed", masteryBonus:"Cleave", value:1500}, 
-{min:536, max:549, name:"Gladius", class:"Shortsword", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"-", weaponProperties:"Finesse, Light", masteryBonus:"Bleed", value:1050}, 
-{min:550, max:560, name:"Brandistock", class:"Trident", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"14", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d10)", masteryBonus:"Brutal", value:1200}, 
-{min:561, max:574, name:"Battle Gavel", class:"Warhammer", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Versatile (1d12)", masteryBonus:"Stagger", value:1100}, 
-{min:575, max:585, name:"Crowbill", class:"War pick", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", masteryBonus:"Sunder", value:1150}, 
-{min:586, max:596, name:"Flog", class:"Whip", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"16", weaponProperties:"Finesse, Reach", masteryBonus:"Hinder", value:1000}, 
-{min:597, max:607, name:"Sarbacan", class:"Blowgun", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"14", weaponProperties:"Loading, Two-handed, Range (25/100)", masteryBonus:"Aim", value:1200}, 
-{min:608, max:621, name:"Stake Thrower", class:"Hand Crossbow", damage:"2d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"20", weaponProperties:"Light, Loading, Range (30/120)", masteryBonus:"Wide Critical", value:1500}, 
-{min:622, max:632, name:"Ballista", class:"Heavy Crossbow", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"14", dexReq:"16", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", masteryBonus:"Aim", value:1500}, 
-{min:633, max:643, name:"War Bow", class:"Longbow", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"12", dexReq:"18", weaponProperties:"Heavy, Two-handed, Range (150/600)", masteryBonus:"Stagger", value:1400}, 
-{min:644, max:653, name:"Truncheon", class:"Club", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"Light", masteryBonus:"-", value:1050}, 
-{min:654, max:666, name:"Stiletto", class:"Dagger", damage:"3d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Finesse, Light, Range (20/60)", masteryBonus:"Wide Critical", value:1100}, 
-{min:667, max:676, name:"Tyrant", class:"Greatclub", damage:"2d8 Bludgeoning", proficiency:"Simple Melee", strReq:"16", dexReq:"-", weaponProperties:"Two-handed", masteryBonus:"-", value:1500}, 
-{min:677, max:686, name:"Cleaver", class:"Handaxe", damage:"1d10 Slashing", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:1150}, 
-{min:687, max:696, name:"Dardo", class:"Javelin", damage:"1d10 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Range (30/120)", masteryBonus:"-", value:1100}, 
-{min:697, max:706, name:"Hurlbat", class:"Light Hammer", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Light, Range (20/60)", masteryBonus:"-", value:1150}, 
-{min:707, max:719, name:"Scepter", class:"Mace", damage:"1d10 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:1250}, 
-{min:720, max:729, name:"Kaiser Fist", class:"Metal Knuckles", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"-", masteryBonus:"-", value:1400}, 
-{min:730, max:739, name:"Rune Staff", class:"Quarterstaff", damage:"1d10 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Versatile (1d12)", masteryBonus:"Hinder", value:1500}, 
-{min:740, max:749, name:"Thresher", class:"Sickle", damage:"1d8 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Light", masteryBonus:"Bleed", value:1200}, 
-{min:750, max:759, name:"Yari", class:"Spear", damage:"1d10 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Range (20/60), Versatile (1d12)", masteryBonus:"-", value:1250}, 
-{min:760, max:769, name:"Battle Crossbow", class:"Light Crossbow", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Thrown (20/60)", masteryBonus:"Debilitate", value:1500}, 
-{min:770, max:779, name:"Kunai", class:"Dart", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"12", dexReq:"18", weaponProperties:"Loading, Two-handed, Range (80/320)", masteryBonus:"Aim", value:1000}, 
-{min:780, max:791, name:"Composite Bow", class:"Shortbow", damage:"1d12 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"16", weaponProperties:"Range, Two-handed, (80/320)", masteryBonus:"-", value:1500}, 
-{min:792, max:801, name:"Hand Trebuchet", class:"Sling", damage:"1d10 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Range (30/120)", masteryBonus:"-", value:2500}, 
-{min:802, max:821, name:"Tabar", class:"Battleaxe", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Versatile (2d6)", masteryBonus:"Cleave", value:2200}, 
-{min:822, max:837, name:"Scorpion Flail", class:"Flail", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", masteryBonus:"Brutal", value:2400}, 
-{min:838, max:853, name:"Kwan Dao", class:"Glaive", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:2500}, 
-{min:854, max:873, name:"Gothic Axe", class:"Greataxe", damage:"3d6 Slashing", proficiency:"Martial Melee", strReq:"20", dexReq:"-", weaponProperties:"Heavy, Two-handed,", masteryBonus:"Cleave", value:2600}, 
-{min:874, max:893, name:"Zweihander", class:"Greatsword", damage:"3d6 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"14", weaponProperties:"Heavy, Two-handed", masteryBonus:"Debilitate", value:2800}, 
-{min:894, max:909, name:"Bec de Corbin", class:"Halberd", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:2600}, 
-{min:910, max:925, name:"Spetum", class:"Lance", damage:"3d6 Piercing", proficiency:"Martial Melee", strReq:"19", dexReq:"14", weaponProperties:"Reach", masteryBonus:"Skewer", value:2300}, 
-{min:926, max:945, name:"Bastard Sword", class:"Longsword", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"12", weaponProperties:"Versatile (2d6)", masteryBonus:"Debilitate", value:2500}, 
-{min:946, max:961, name:"Driver", class:"Maul", damage:"3d6 Bludgeoning", proficiency:"Martial Melee", strReq:"21", dexReq:"-", weaponProperties:"Heavy, Two-handed", masteryBonus:"Stagger", value:2400}, 
-{min:962, max:977, name:"Devil Star", class:"Morningstar", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", masteryBonus:"Bleed", value:2800}, 
-{min:978, max:993, name:"Guisarme", class:"Pike", damage:"2d6 Piercing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", masteryBonus:"-", value:2400}, 
-{min:994, max:1009, name:"Epee", class:"Rapier", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"18", weaponProperties:"Finesse", masteryBonus:"-", value:2200}, 
-{min:1010, max:1025, name:"Falchion", class:"Scimitar", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"16", weaponProperties:"Finesse, Light,", masteryBonus:"Wide Critical", value:2500}, 
-{min:1026, max:1041, name:"Grimm", class:"Scythe", damage:"5d4 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"15", weaponProperties:"Heavy, Two-handed", masteryBonus:"Cleave", value:2900}, 
-{min:1042, max:1060, name:"Tulwar", class:"Shortsword", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"14", dexReq:"-", weaponProperties:"Finesse, Light", masteryBonus:"Bleed", value:2600}, 
-{min:1061, max:1076, name:"War Fork", class:"Trident", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d12)", masteryBonus:"Brutal", value:2500}, 
-{min:1077, max:1096, name:"Skullcracker", class:"Warhammer", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Versatile (2d6)", masteryBonus:"Stagger", value:2900}, 
-{min:1097, max:1112, name:"Mattock", class:"War pick", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"20", dexReq:"-", weaponProperties:"-", masteryBonus:"Sunder", value:2200}, 
-{min:1113, max:1128, name:"Scourge", class:"Whip", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"18", weaponProperties:"Finesse, Reach", masteryBonus:"Hinder", value:2100}, 
-{min:1129, max:1144, name:"Sumpitan", class:"Blowgun", damage:"1d10 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"16", weaponProperties:"Loading, Two-handed, Range (25/100)", masteryBonus:"Aim", value:2200}, 
-{min:1145, max:1164, name:"Bolt Pistol", class:"Hand Crossbow", damage:"3d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"22", weaponProperties:"Light, Loading, Range (30/120)", masteryBonus:"Wide Critical", value:2800}, 
-{min:1165, max:1180, name:"Colossus Crossbow", class:"Heavy Crossbow", damage:"1d10 Piercing", proficiency:"Martial Ranged", strReq:"14", dexReq:"17", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", masteryBonus:"Aim", value:3000}, 
-{min:1181, max:1200, name:"Siege Bow", class:"Longbow", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"12", dexReq:"19", weaponProperties:"Heavy, Two-handed, Range (150/600)", masteryBonus:"Stagger", value:3000}
-	];
+            {tier: 1, name: "Small Healing Potion", property: "Restores 1 Healing Surges", action:'Bonus Action', value:25, weight:10},
+            {tier: 1, name: "Small Mana Potion", property: "Restores 2d4+2 Spell Points or 2 uses of short rest character features", action:'Bonus Action', value:40, weight:10},
+            {tier: 2, name: "Small Rejuvination Potion", property: "Restores 1 Healing Surges, 1d4+1 Spell Points, and 1 use of short rest character features", action:'Action', value:100, weight:4},
+            {tier: 2, name: "Large Healing Potion", property: "Restores 3 Healing Surges", action:'Bonus Action', value:350, weight:15},
+            {tier: 3, name: "Large Mana Potion", property: "Restores 4d4+4 Spell Points or 4 uses of short rest character features", action:'Bonus Action', value:560, weight:15},
+            {tier: 3, name: "Large Rejuvination Potion", property: "Restores 2 Healing Surges, 2d4+2 Spell Points, and 2 uses of short rest character features", action:'Ation', value:980, weight:4},
+            {tier: 4, name: "Full Rejuvination Potion", property: "Gain the benefits of a Long Rest", action:'Action', value:1200, weight:2},
+        ];
+const spellTable = [
+            {name: "Acid Splash", value:10, spellLevel: 0},
+            {name: "Blade Ward", value:10, spellLevel: 0},
+            {name: "Booming Blade", value:10, spellLevel: 0},
+            {name: "Chill Touch", value:10, spellLevel: 0},
+            {name: "Eldritch Blast", value:10, spellLevel: 0},
+            {name: "Fire Bolt", value:10, spellLevel: 0},
+            {name: "Frostbite", value:10, spellLevel: 0},
+            {name: "Green-Flame Blade", value:10, spellLevel: 0},
+            {name: "Guidance", value:10, spellLevel: 0},
+            {name: "Gust", value:10, spellLevel: 0},
+            {name: "Infestation", value:10, spellLevel: 0},
+            {name: "Lightning Lure", value:10, spellLevel: 0},
+            {name: "Mage Hand", value:10, spellLevel: 0},
+            {name: "Magic Stone", value:10, spellLevel: 0},
+            {name: "Mind Sliver", value:10, spellLevel: 0},
+            {name: "Poison Spray", value:10, spellLevel: 0},
+            {name: "Primal Savagery", value:10, spellLevel: 0},
+            {name: "Produce Flame", value:10, spellLevel: 0},
+            {name: "Ray of Frost", value:10, spellLevel: 0},
+            {name: "Sacred Flame", value:10, spellLevel: 0},
+            {name: "Shillelagh", value:10, spellLevel: 0},
+            {name: "Shocking Grasp", value:10, spellLevel: 0},
+            {name: "Spare the Dying", value:10, spellLevel: 0},
+            {name: "Sword Burst", value:10, spellLevel: 0},
+            {name: "Thorn Whip", value:10, spellLevel: 0},
+            {name: "Thunderclap", value:10, spellLevel: 0},
+            {name: "Toll the Dead", value:10, spellLevel: 0},
+            {name: "True Strike", value:10, spellLevel: 0},
+            {name: "Vicious Mockery", value:10, spellLevel: 0},
+            {name: "Word of Radiance", value:10, spellLevel: 0},
+            {name: "Armor of Agathys", value:60, spellLevel: 1},
+            {name: "Arms of Hadar", value:60, spellLevel: 1},
+            {name: "Bane", value:60, spellLevel: 1},
+            {name: "Bless", value:60, spellLevel: 1},
+            {name: "Burning Hands", value:60, spellLevel: 1},
+            {name: "Catapult", value:60, spellLevel: 1},
+            {name: "Chaos Bolt", value:60, spellLevel: 1},
+            {name: "Chromatic Orb", value:60, spellLevel: 1},
+            {name: "Compelled Duel", value:60, spellLevel: 1},
+            {name: "Cure Wounds", value:60, spellLevel: 1},
+            {name: "Detect Magic", value:60, spellLevel: 1},
+            {name: "Detect Poison and Disease", value:60, spellLevel: 1},
+            {name: "Dissonant Whispers", value:60, spellLevel: 1},
+            {name: "Divine Favor", value:60, spellLevel: 1},
+            {name: "Earth Tremor", value:60, spellLevel: 1},
+            {name: "Ensnaring Strike", value:60, spellLevel: 1},
+            {name: "Entangle", value:60, spellLevel: 1},
+            {name: "Expeditious Retreat", value:60, spellLevel: 1},
+            {name: "Faerie Fire", value:60, spellLevel: 1},
+            {name: "False Life", value:60, spellLevel: 1},
+            {name: "Find Familiar", value:60, spellLevel: 1},
+            {name: "Fog Cloud", value:60, spellLevel: 1},
+            {name: "Frost Fingers", value:60, spellLevel: 1},
+            {name: "Gift of Alacrity", value:60, spellLevel: 1},
+            {name: "Goodberry", value:60, spellLevel: 1},
+            {name: "Grease", value:60, spellLevel: 1},
+            {name: "Guiding Bolt", value:60, spellLevel: 1},
+            {name: "Hail of Thorns", value:60, spellLevel: 1},
+            {name: "Healing Word", value:60, spellLevel: 1},
+            {name: "Hellish Rebuke", value:60, spellLevel: 1},
+            {name: "Heroism", value:60, spellLevel: 1},
+            {name: "Hex", value:60, spellLevel: 1},
+            {name: "Hunter's Mark", value:60, spellLevel: 1},
+            {name: "Ice Knife", value:60, spellLevel: 1},
+            {name: "Inflict Wounds", value:60, spellLevel: 1},
+            {name: "Mage Armor", value:60, spellLevel: 1},
+            {name: "Magic Missile", value:60, spellLevel: 1},
+            {name: "Protection from Evil and Good", value:60, spellLevel: 1},
+            {name: "Ray of Sickness", value:60, spellLevel: 1},
+            {name: "Sanctuary", value:60, spellLevel: 1},
+            {name: "Searing Smite", value:60, spellLevel: 1},
+            {name: "Shield", value:60, spellLevel: 1},
+            {name: "Shield of Faith", value:60, spellLevel: 1},
+            {name: "Sleep", value:60, spellLevel: 1},
+            {name: "Tasha's Caustic Brew", value:60, spellLevel: 1},
+            {name: "Tasha's Hideous Laughter", value:60, spellLevel: 1},
+            {name: "Thunderous Smite", value:60, spellLevel: 1},
+            {name: "Thunderwave", value:60, spellLevel: 1},
+            {name: "Wrathful Smite", value:60, spellLevel: 1},
+            {name: "Zephyr Strike", value:60, spellLevel: 1},
+            {name: "Aganazzar's Scorcher", value:120, spellLevel: 2},
+            {name: "Aid", value:120, spellLevel: 2},
+            {name: "Barkskin", value:120, spellLevel: 2},
+            {name: "Blindness/Deafness", value:120, spellLevel: 2},
+            {name: "Blur", value:120, spellLevel: 2},
+            {name: "Branding Smite", value:120, spellLevel: 2},
+            {name: "Calm Emotions", value:120, spellLevel: 2},
+            {name: "Cloud of Daggers", value:120, spellLevel: 2},
+            {name: "Cordon of Arrows", value:120, spellLevel: 2},
+            {name: "Crown of Madness", value:120, spellLevel: 2},
+            {name: "Darkness", value:120, spellLevel: 2},
+            {name: "Darkvision", value:120, spellLevel: 2},
+            {name: "Dragon's Breath", value:120, spellLevel: 2},
+            {name: "Enlarge/Reduce", value:120, spellLevel: 2},
+            {name: "Flame Blade", value:120, spellLevel: 2},
+            {name: "Flaming Sphere", value:120, spellLevel: 2},
+            {name: "Healing Spirit", value:120, spellLevel: 2},
+            {name: "Heat Metal", value:120, spellLevel: 2},
+            {name: "Hold Person", value:120, spellLevel: 2},
+            {name: "Invisibility", value:120, spellLevel: 2},
+            {name: "Kinetic Jaunt", value:120, spellLevel: 2},
+            {name: "Lesser Restoration", value:120, spellLevel: 2},
+            {name: "Magic Weapon", value:120, spellLevel: 2},
+            {name: "Melf's Acid Arrow", value:120, spellLevel: 2},
+            {name: "Mind Spike", value:120, spellLevel: 2},
+            {name: "Mirror Image", value:120, spellLevel: 2},
+            {name: "Misty Step", value:120, spellLevel: 2},
+            {name: "Phantasmal Force", value:120, spellLevel: 2},
+            {name: "Prayer of Healing", value:120, spellLevel: 2},
+            {name: "Pyrotechnics", value:120, spellLevel: 2},
+            {name: "Ray of Enfeeblement", value:120, spellLevel: 2},
+            {name: "Scorching Ray", value:120, spellLevel: 2},
+            {name: "Shadow Blade", value:120, spellLevel: 2},
+            {name: "Shatter", value:120, spellLevel: 2},
+            {name: "Silence", value:120, spellLevel: 2},
+            {name: "Spike Growth", value:120, spellLevel: 2},
+            {name: "Spiritual Weapon", value:120, spellLevel: 2},
+            {name: "Tasha's Mind Whip", value:120, spellLevel: 2},
+            {name: "Web", value:120, spellLevel: 2},
+            {name: "Wither and Bloom", value:120, spellLevel: 2},
+            {name: "Animate Dead", value:200, spellLevel: 3},
+            {name: "Aura of Vitality", value:200, spellLevel: 3},
+            {name: "Beacon of Hope", value:200, spellLevel: 3},
+            {name: "Blinding Smite", value:200, spellLevel: 3},
+            {name: "Blink", value:200, spellLevel: 3},
+            {name: "Conjure Barrage", value:200, spellLevel: 3},
+            {name: "Counterspell", value:200, spellLevel: 3},
+            {name: "Crusader's Mantle", value:200, spellLevel: 3},
+            {name: "Daylight", value:200, spellLevel: 3},
+            {name: "Dispel Magic", value:200, spellLevel: 3},
+            {name: "Elemental Weapon", value:200, spellLevel: 3},
+            {name: "Erupting Earth", value:200, spellLevel: 3},
+            {name: "Fear", value:200, spellLevel: 3},
+            {name: "Fireball", value:200, spellLevel: 3},
+            {name: "Flame Arrows", value:200, spellLevel: 3},
+            {name: "Fly", value:200, spellLevel: 3},
+            {name: "Glyph of Warding", value:200, spellLevel: 3},
+            {name: "Haste", value:200, spellLevel: 3},
+            {name: "Hunger Of Hadar", value:200, spellLevel: 3},
+            {name: "Hypnotic Pattern", value:200, spellLevel: 3},
+            {name: "Intellect Fortress", value:200, spellLevel: 3},
+            {name: "Life Transference", value:200, spellLevel: 3},
+            {name: "Lightning Arrow", value:200, spellLevel: 3},
+            {name: "Lightning Bolt", value:200, spellLevel: 3},
+            {name: "Major Image", value:200, spellLevel: 3},
+            {name: "Mass Healing Word", value:200, spellLevel: 3},
+            {name: "Meld into Stone", value:200, spellLevel: 3},
+            {name: "Melf's Minute Meteors", value:200, spellLevel: 3},
+            {name: "Pulse Wave", value:200, spellLevel: 3},
+            {name: "Remove Curse", value:200, spellLevel: 3},
+            {name: "Revivify", value:200, spellLevel: 3},
+            {name: "Slow", value:200, spellLevel: 3},
+            {name: "Spirit Guardians", value:200, spellLevel: 3},
+            {name: "Summon Lesser Demons", value:200, spellLevel: 3},
+            {name: "Summon Shadowspawn", value:200, spellLevel: 3},
+            {name: "Summon Undead", value:200, spellLevel: 3},
+            {name: "Thunder Step", value:200, spellLevel: 3},
+            {name: "Vampiric Touch", value:200, spellLevel: 3},
+            {name: "Wall of Water", value:200, spellLevel: 3},
+            {name: "Wind Wall", value:200, spellLevel: 3},
+            {name: "Aura of Life", value:320, spellLevel: 4},
+            {name: "Aura of Purity", value:320, spellLevel: 4},
+            {name: "Banishment", value:320, spellLevel: 4},
+            {name: "Blight", value:320, spellLevel: 4},
+            {name: "Confusion", value:320, spellLevel: 4},
+            {name: "Conjure Minor Elementals", value:320, spellLevel: 4},
+            {name: "Death Ward", value:320, spellLevel: 4},
+            {name: "Dimension Door", value:320, spellLevel: 4},
+            {name: "Dominate Beast", value:320, spellLevel: 4},
+            {name: "Evard's Black Tentacles", value:320, spellLevel: 4},
+            {name: "Fire Shield", value:320, spellLevel: 4},
+            {name: "Grasping Vine", value:320, spellLevel: 4},
+            {name: "Gravity Sinkhole", value:320, spellLevel: 4},
+            {name: "Greater Invisibility", value:320, spellLevel: 4},
+            {name: "Guardian of Faith", value:320, spellLevel: 4},
+            {name: "Guardian of Nature", value:320, spellLevel: 4},
+            {name: "Otiluke's Resilient Sphere", value:320, spellLevel: 4},
+            {name: "Phantasmal Killer", value:320, spellLevel: 4},
+            {name: "Polymorph", value:320, spellLevel: 4},
+            {name: "Raulothim's Psychic Lance", value:320, spellLevel: 4},
+            {name: "Shadow Of Moil", value:320, spellLevel: 4},
+            {name: "Staggering Smite", value:320, spellLevel: 4},
+            {name: "Stone Shape", value:320, spellLevel: 4},
+            {name: "Stoneskin", value:320, spellLevel: 4},
+            {name: "Storm Sphere", value:320, spellLevel: 4},
+            {name: "Summon Aberration", value:320, spellLevel: 4},
+            {name: "Summon Construct", value:320, spellLevel: 4},
+            {name: "Summon Elemental", value:320, spellLevel: 4},
+            {name: "Summon Greater Demon", value:320, spellLevel: 4},
+            {name: "Wall of Fire", value:320, spellLevel: 4},
+            {name: "Animate Objects", value:640, spellLevel: 5},
+            {name: "Banishing Smite", value:640, spellLevel: 5},
+            {name: "Bigby's Hand", value:640, spellLevel: 5},
+            {name: "Circle of Power", value:640, spellLevel: 5},
+            {name: "Cloudkill", value:640, spellLevel: 5},
+            {name: "Cone of Cold", value:640, spellLevel: 5},
+            {name: "Conjure Elemental", value:640, spellLevel: 5},
+            {name: "Conjure Volley", value:640, spellLevel: 5},
+            {name: "Contagion", value:640, spellLevel: 5},
+            {name: "Danse Macabre", value:640, spellLevel: 5},
+            {name: "Dawn", value:640, spellLevel: 5},
+            {name: "Destructive Wave", value:640, spellLevel: 5},
+            {name: "Dispel Evil and Good", value:640, spellLevel: 5},
+            {name: "Far Step", value:640, spellLevel: 5},
+            {name: "Flame Strike", value:640, spellLevel: 5},
+            {name: "Hold Monster", value:640, spellLevel: 5},
+            {name: "Holy Weapon", value:640, spellLevel: 5},
+            {name: "Immolation", value:640, spellLevel: 5},
+            {name: "Insect Plague", value:640, spellLevel: 5},
+            {name: "Negative Energy Flood", value:640, spellLevel: 5},
+            {name: "Passwall", value:640, spellLevel: 5},
+            {name: "Steel Wind Strike", value:640, spellLevel: 5},
+            {name: "Summon Celestial", value:640, spellLevel: 5},
+            {name: "Swift Quiver", value:640, spellLevel: 5},
+            {name: "Synaptic Static", value:640, spellLevel: 5},
+            {name: "Telekinesis", value:640, spellLevel: 5},
+            {name: "Temporal Shunt", value:640, spellLevel: 5},
+            {name: "Wall of Force", value:640, spellLevel: 5},
+            {name: "Wall of Light", value:640, spellLevel: 5},
+            {name: "Wall of Stone", value:640, spellLevel: 5},
+            {name: "Blade Barrier", value:1280, spellLevel: 6},
+            {name: "Bones of the Earth", value:1280, spellLevel: 6},
+            {name: "Chain Lightning", value:1280, spellLevel: 6},
+            {name: "Circle of Death", value:1280, spellLevel: 6},
+            {name: "Disintegrate", value:1280, spellLevel: 6},
+            {name: "Gravity Fissure", value:1280, spellLevel: 6},
+            {name: "Harm", value:1280, spellLevel: 6},
+            {name: "Heal", value:1280, spellLevel: 6},
+            {name: "Investiture of Flame", value:1280, spellLevel: 6},
+            {name: "Investiture of Ice", value:1280, spellLevel: 6},
+            {name: "Investiture of Stone", value:1280, spellLevel: 6},
+            {name: "Mental Prison", value:1280, spellLevel: 6},
+            {name: "Scatter", value:1280, spellLevel: 6},
+            {name: "Soul Cage", value:1280, spellLevel: 6},
+            {name: "Summon Fiend", value:1280, spellLevel: 6},
+            {name: "Sunbeam", value:1280, spellLevel: 6},
+            {name: "Tasha's Otherworldly Guise", value:1280, spellLevel: 6},
+            {name: "True Seeing", value:1280, spellLevel: 6},
+            {name: "Wall of Ice", value:1280, spellLevel: 6},
+            {name: "Wall of Thorns", value:1280, spellLevel: 6},
+            {name: "Crown of Stars", value:2560, spellLevel: 7},
+            {name: "Finger of Death", value:2560, spellLevel: 7},
+            {name: "Fire Storm", value:2560, spellLevel: 7},
+            {name: "Forcecage", value:2560, spellLevel: 7},
+            {name: "Mordenkainen's Sword", value:2560, spellLevel: 7},
+            {name: "Power Word: Pain", value:2560, spellLevel: 7},
+            {name: "Prismatic Spray", value:2560, spellLevel: 7},
+            {name: "Regenerate", value:2560, spellLevel: 7},
+            {name: "Reverse Gravity", value:2560, spellLevel: 7},
+            {name: "Whirlwind", value:2560, spellLevel: 7},
+            {name: "Abi-Dalzim's Horrid Wilting", value:5120, spellLevel: 8},
+            {name: "Animal Shapes", value:5120, spellLevel: 8},
+            {name: "Antipathy/Sympathy", value:5120, spellLevel: 8},
+            {name: "Dark Star", value:5120, spellLevel: 8},
+            {name: "Dominate Monster", value:5120, spellLevel: 8},
+            {name: "Earthquake", value:5120, spellLevel: 8},
+            {name: "Holy Aura", value:5120, spellLevel: 8},
+            {name: "Mind Blank", value:5120, spellLevel: 8},
+            {name: "Power Word: Stun", value:5120, spellLevel: 8},
+            {name: "Sunburst", value:5120, spellLevel: 8},
+            {name: "Blade of Disaster", value:10000, spellLevel: 9},
+            {name: "Foresight", value:10000, spellLevel: 9},
+            {name: "Invulnerability", value:10000, spellLevel: 9},
+            {name: "Mass Heal", value:10000, spellLevel: 9},
+            {name: "Meteor Swarm", value:10000, spellLevel: 9},
+            {name: "Prismatic Wall", value:10000, spellLevel: 9},
+            {name: "Psychic Scream", value:10000, spellLevel: 9},
+            {name: "Ravenous Void", value:10000, spellLevel: 9},
+            {name: "Time Stop", value:10000, spellLevel: 9},
+            {name: "Wish", value:10000, spellLevel: 9},
+        ];
 const armorTable = [
-{min:1, max:7, name:"Sandals", class:"Feet", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"-", value:1}, 
-{min:8, max:14, name:"Shoes", class:"Feet", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"15", dexMax:"-", masteryBonus:"Dashing", value:1}, 
-{min:15, max:21, name:"Leather Boots", class:"Feet", armorClass:"-", proficiency:"Light", strReq:"-", dexReq:"11", dexMax:"-", masteryBonus:"1 AP", value:2}, 
-{min:22, max:28, name:"Sash", class:"Belt", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"17", dexMax:"-", masteryBonus:"Dashing", value:1}, 
-{min:29, max:35, name:"Belt", class:"Belt", armorClass:"-", proficiency:"Light", strReq:"-", dexReq:"13", dexMax:"-", masteryBonus:"1 AP", value:2}, 
-{min:36, max:42, name:"Leather Gloves", class:"Gloves", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"-", value:3}, 
-{min:43, max:49, name:"Heavy Leather Gloves", class:"Gloves", armorClass:"-", proficiency:"Light", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"1 AP", value:5}, 
-{min:50, max:56, name:"Leather Cap", class:"Head", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"-", value:5}, 
-{min:57, max:63, name:"Skull Helmet", class:"Head", armorClass:"-", proficiency:"Medium", strReq:"13", dexReq:"-", dexMax:"-", masteryBonus:"2 AP", value:9}, 
-{min:64, max:72, name:"Buckler", class:"Shield", armorClass:"1", proficiency:"Shield", strReq:"-", dexReq:"13", dexMax:"-", masteryBonus:"2 AP", value:10}, 
-{min:73, max:82, name:"Shield", class:"Shield", armorClass:"2", proficiency:"Shield", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"-", value:15}, 
-{min:83, max:90, name:"Cloak", class:"Torso", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"Dex Mod", masteryBonus:"-", value:12}, 
-{min:91, max:98, name:"Cape", class:"Torso", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"13", dexMax:"Dex Mod", masteryBonus:"1 AP", value:14}, 
-{min:99, max:106, name:"Quilted Armor", class:"Torso", armorClass:"1", proficiency:"-", strReq:"-", dexReq:"14", dexMax:"Dex Mod", masteryBonus:"2 AP", value:18}, 
-{min:107, max:114, name:"Gambeson", class:"Torso", armorClass:"1", proficiency:"-", strReq:"-", dexReq:"15", dexMax:"Dex Mod", masteryBonus:"+1 AC", value:20}, 
-{min:115, max:122, name:"Padded Armor", class:"Torso", armorClass:"1", proficiency:"Light", strReq:"-", dexReq:"11", dexMax:"Dex Mod", masteryBonus:"1 AP", value:15}, 
-{min:123, max:130, name:"Leather Armor", class:"Torso", armorClass:"1", proficiency:"Light", strReq:"-", dexReq:"15", dexMax:"Dex Mod", masteryBonus:"3 AP", value:25}, 
-{min:131, max:138, name:"Sudded Leather Armor", class:"Torso", armorClass:"2", proficiency:"Light", strReq:"11", dexReq:"-", dexMax:"Dex Mod", masteryBonus:"1 AP", value:45}, 
-{min:139, max:146, name:"Hide Armor", class:"Torso", armorClass:"3", proficiency:"Light", strReq:"12", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"Dex Max 3", value:15}, 
-{min:147, max:154, name:"Chain Shirt", class:"Torso", armorClass:"3", proficiency:"Medium", strReq:"11", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"1 AP", value:50}, 
-{min:155, max:162, name:"Chain Mail", class:"Torso", armorClass:"6", proficiency:"Heavy", strReq:"13", dexReq:"-", dexMax:"-", masteryBonus:"2 AP", value:75}, 
-{min:163, max:197, name:"Ring", class:"Jewelrey", armorClass:"-", proficiency:"-", strReq:"(Cha 11)", dexReq:"(Cha 11)", dexMax:"-", masteryBonus:"1 AP", value:750}, 
-{min:198, max:232, name:"Amulet", class:"Jewelrey", armorClass:"-", proficiency:"-", strReq:"(Int 11)", dexReq:"(Int 11)", dexMax:"-", masteryBonus:"2 AP", value:900}, 
-{min:233, max:243, name:"Heavy Leather Boots", class:"Feet", armorClass:"-", proficiency:"Medium", strReq:"-", dexReq:"15", dexMax:"-", masteryBonus:"Dashing", value:170}, 
-{min:244, max:254, name:"Chain Boots", class:"Feet", armorClass:"-", proficiency:"Medium", strReq:"14", dexReq:"-", dexMax:"-", masteryBonus:"2 AP", value:190}, 
-{min:255, max:265, name:"Heavy Leather Belt", class:"Belt", armorClass:"-", proficiency:"Medium", strReq:"-", dexReq:"13", dexMax:"-", masteryBonus:"2 AP", value:210}, 
-{min:266, max:276, name:"Vambrace", class:"Gloves", armorClass:"-", proficiency:"Light", strReq:"-", dexReq:"13", dexMax:"-", masteryBonus:"2 AP", value:230}, 
-{min:277, max:287, name:"Chain Gloves", class:"Gloves", armorClass:"-", proficiency:"Medium", strReq:"-", dexReq:"15", dexMax:"-", masteryBonus:"3 AP", value:260}, 
-{min:288, max:298, name:"Bone Mask", class:"Head", armorClass:"-", proficiency:"Light", strReq:"12", dexReq:"-", dexMax:"-", masteryBonus:"1 AP", value:300}, 
-{min:299, max:309, name:"Crown", class:"Head", armorClass:"-", proficiency:"Light", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"1 AP", value:450}, 
-{min:310, max:320, name:"Full Helm", class:"Head", armorClass:"-", proficiency:"Medium", strReq:"14", dexReq:"-", dexMax:"-", masteryBonus:"Fortified", value:380}, 
-{min:321, max:332, name:"Kite Shield", class:"Shield", armorClass:"2", proficiency:"Light, Shield", strReq:"11", dexReq:"13", dexMax:"-", masteryBonus:"3 AP", value:410}, 
-{min:333, max:344, name:"Large Shield", class:"Shield", armorClass:"2", proficiency:"Medium, Shield", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"5 AP", value:430}, 
-{min:345, max:356, name:"Hardened Leather Armor", class:"Torso", armorClass:"1", proficiency:"Light", strReq:"13", dexReq:"-", dexMax:"Dex Mod", masteryBonus:"4 AP", value:350}, 
-{min:357, max:368, name:"Serpentskin Armor", class:"Torso", armorClass:"2", proficiency:"Light", strReq:"13", dexReq:"-", dexMax:"Dex Mod", masteryBonus:"2 AP", value:500}, 
-{min:369, max:380, name:"Breast Plate", class:"Torso", armorClass:"4", proficiency:"Medium", strReq:"14", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"3 AP", value:450}, 
-{min:381, max:392, name:"Cuirass", class:"Torso", armorClass:"4", proficiency:"Medium", strReq:"15", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"Dex Max 3", value:580}, 
-{min:393, max:404, name:"Field Plate", class:"Torso", armorClass:"6", proficiency:"Medium", strReq:"16", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"Dex Max 3", value:750}, 
-{min:405, max:416, name:"Scale Mail", class:"Torso", armorClass:"4", proficiency:"Medium", strReq:"14", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"2 AP", value:650}, 
-{min:417, max:428, name:"Ring Mail", class:"Torso", armorClass:"4", proficiency:"Heavy", strReq:"12", dexReq:"-", dexMax:"-", masteryBonus:"Dex Max 2", value:700}, 
-{min:429, max:440, name:"Wyrmhide Armor", class:"Torso", armorClass:"6", proficiency:"Heavy", strReq:"16", dexReq:"-", dexMax:"-", masteryBonus:"Dex Max 3", value:740}, 
-{min:441, max:452, name:"Splint Mail", class:"Torso", armorClass:"7", proficiency:"Heavy", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"3 AP", value:800}, 
-{min:453, max:472, name:"Light Plate Boots", class:"Feet", armorClass:"-", proficiency:"Medium", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"Anchored", value:1000}, 
-{min:473, max:492, name:"Greaves", class:"Feet", armorClass:"-", proficiency:"Heavy", strReq:"17", dexReq:"-", dexMax:"-", masteryBonus:"3 AP", value:1050}, 
-{min:493, max:512, name:"Mithril Coil", class:"Belt", armorClass:"-", proficiency:"Medium", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"3 AP", value:1100}, 
-{min:513, max:532, name:"Plated Belt", class:"Belt", armorClass:"1", proficiency:"Heavy", strReq:"17", dexReq:"-", dexMax:"-", masteryBonus:"-", value:1150}, 
-{min:533, max:552, name:"Light Plate Gloves", class:"Gloves", armorClass:"-", proficiency:"Medium", strReq:"14", dexReq:"-", dexMax:"-", masteryBonus:"Reinforced", value:1200}, 
-{min:553, max:572, name:"Diadem", class:"Head", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"2 AP", value:1300}, 
-{min:573, max:592, name:"Circlet", class:"Head", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"-", dexMax:"-", masteryBonus:"2 AP", value:1400}, 
-{min:593, max:612, name:"Great Helm", class:"Head", armorClass:"-", proficiency:"Heavy", strReq:"17", dexReq:"-", dexMax:"-", masteryBonus:"Reinforced", value:1500}, 
-{min:613, max:632, name:"Tower Shield", class:"Shield", armorClass:"2", proficiency:"Heavy, Shield", strReq:"17", dexReq:"-", dexMax:"-", masteryBonus:"+1 AC", value:1600}, 
-{min:633, max:653, name:"Shroud", class:"Torso", armorClass:"-", proficiency:"-", strReq:"-", dexReq:"17", dexMax:"Dex Mod", masteryBonus:"4 AP", value:1700}, 
-{min:654, max:674, name:"Grand Robe", class:"Torso", armorClass:"1", proficiency:"-", strReq:"-", dexReq:"15", dexMax:"Dex Mod", masteryBonus:"3 AP", value:1800}, 
-{min:675, max:695, name:"Light Plate", class:"Torso", armorClass:"4", proficiency:"Medium", strReq:"13", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"3 AP", value:1900}, 
-{min:696, max:716, name:"Half Plate", class:"Torso", armorClass:"5", proficiency:"Medium", strReq:"15", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"2 AP", value:2000}, 
-{min:717, max:737, name:"Demonhide Armor", class:"Torso", armorClass:"3", proficiency:"Medium", strReq:"12", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"3 AP", value:2200}, 
-{min:738, max:758, name:"Archon Plate", class:"Torso", armorClass:"5", proficiency:"Medium", strReq:"17", dexReq:"-", dexMax:"Dex Max 2", masteryBonus:"5 AP", value:2400}, 
-{min:759, max:779, name:"Mesh Armor", class:"Torso", armorClass:"5", proficiency:"Heavy", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"Dex Max 2", value:2500}, 
-{min:780, max:800, name:"Tigulated Mail", class:"Torso", armorClass:"5", proficiency:"Heavy", strReq:"14", dexReq:"-", dexMax:"-", masteryBonus:"3 AP", value:2600}, 
-{min:801, max:821, name:"Full Plate Mail", class:"Torso", armorClass:"8", proficiency:"Heavy", strReq:"17", dexReq:"-", dexMax:"-", masteryBonus:"3 AP", value:2800}, 
-{min:822, max:842, name:"Ancient Plate", class:"Torso", armorClass:"7", proficiency:"Heavy", strReq:"16", dexReq:"-", dexMax:"-", masteryBonus:"4 AP", value:3000}, 
-{min:843, max:867, name:"Plate Gauntlets", class:"Gloves", armorClass:"1", proficiency:"Heavy", strReq:"16", dexReq:"-", dexMax:"-", masteryBonus:"Fortified", value:4000}, 
-{min:868, max:892, name:"Armet", class:"Head", armorClass:"1", proficiency:"Heavy", strReq:"15", dexReq:"-", dexMax:"-", masteryBonus:"-", value:4500}, 
-{min:893, max:917, name:"Gothic Shield", class:"Shield", armorClass:"3", proficiency:"Heavy, Shield", strReq:"19", dexReq:"-", dexMax:"-", masteryBonus:"Anchored", value:5000}, 
-{min:918, max:942, name:"Aegis", class:"Shield", armorClass:"3", proficiency:"Heavy, Shield", strReq:"21", dexReq:"-", dexMax:"-", masteryBonus:"Braced", value:6000}, 
-{min:943, max:971, name:"Gothic Plate", class:"Torso", armorClass:"9", proficiency:"Heavy", strReq:"21", dexReq:"-", dexMax:"-", masteryBonus:"+1 AC", value:7000}, 
-{min:972, max:1000, name:"Templar Plate", class:"Torso", armorClass:"8", proficiency:"Heavy", strReq:"19", dexReq:"-", dexMax:"-", masteryBonus:"5 AP", value:8000}, 
-	];
+            {tier: 1, weight: 7, name: "Sandals", class: "Feet", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 1}, 
+            {tier: 1, weight: 7, name: "Shoes", class: "Feet", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "15", dexMax: "-", prowessBonus: "Dashing", value: 1}, 
+            {tier: 1, weight: 7, name: "Leather Boots", class: "Feet", armorClass: "-", proficiency: "Light", strReq: "-", dexReq: "11", dexMax: "-", prowessBonus: "1 AP", value: 2}, 
+            {tier: 1, weight: 7, name: "Sash", class: "Belt", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "17", dexMax: "-", prowessBonus: "Dashing", value: 1}, 
+            {tier: 1, weight: 7, name: "Belt", class: "Belt", armorClass: "-", proficiency: "Light", strReq: "-", dexReq: "13", dexMax: "-", prowessBonus: "1 AP", value: 2}, 
+            {tier: 1, weight: 7, name: "Leather Gloves", class: "Gloves", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 3}, 
+            {tier: 1, weight: 7, name: "Heavy Leather Gloves", class: "Gloves", armorClass: "-", proficiency: "Light", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "1 AP", value: 5}, 
+            {tier: 1, weight: 7, name: "Leather Cap", class: "Head", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 5}, 
+            {tier: 1, weight: 7, name: "Skull Helmet", class: "Head", armorClass: "-", proficiency: "Medium", strReq: "13", dexReq: "-", dexMax: "-", prowessBonus: "2 AP", value: 9}, 
+            {tier: 1, weight: 9, name: "Buckler", class: "Shield", armorClass: "1", proficiency: "Shield", strReq: "-", dexReq: "13", dexMax: "-", prowessBonus: "2 AP", value: 10}, 
+            {tier: 1, weight: 10, name: "Shield", class: "Shield", armorClass: "2", proficiency: "Shield", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 15}, 
+            {tier: 1, weight: 8, name: "Cloak", class: "Torso", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "Dex Mod", prowessBonus: "-", value: 12}, 
+            {tier: 1, weight: 8, name: "Cape", class: "Torso", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "13", dexMax: "Dex Mod", prowessBonus: "1 AP", value: 14}, 
+            {tier: 1, weight: 8, name: "Quilted Armor", class: "Torso", armorClass: "1", proficiency: "-", strReq: "-", dexReq: "14", dexMax: "Dex Mod", prowessBonus: "2 AP", value: 18}, 
+            {tier: 1, weight: 8, name: "Gambeson", class: "Torso", armorClass: "1", proficiency: "-", strReq: "-", dexReq: "15", dexMax: "Dex Mod", prowessBonus: "+1 AC", value: 20}, 
+            {tier: 1, weight: 8, name: "Padded Armor", class: "Torso", armorClass: "1", proficiency: "Light", strReq: "-", dexReq: "11", dexMax: "Dex Mod", prowessBonus: "1 AP", value: 15}, 
+            {tier: 1, weight: 8, name: "Leather Armor", class: "Torso", armorClass: "1", proficiency: "Light", strReq: "-", dexReq: "15", dexMax: "Dex Mod", prowessBonus: "3 AP", value: 25}, 
+            {tier: 1, weight: 8, name: "Sudded Leather Armor", class: "Torso", armorClass: "2", proficiency: "Light", strReq: "11", dexReq: "-", dexMax: "Dex Mod", prowessBonus: "1 AP", value: 45}, 
+            {tier: 1, weight: 8, name: "Hide Armor", class: "Torso", armorClass: "3", proficiency: "Light", strReq: "12", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "Dex Max 3", value: 15}, 
+            {tier: 1, weight: 8, name: "Chain Shirt", class: "Torso", armorClass: "3", proficiency: "Medium", strReq: "11", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "1 AP", value: 50}, 
+            {tier: 1, weight: 8, name: "Chain Mail", class: "Torso", armorClass: "6", proficiency: "Heavy", strReq: "13", dexReq: "-", dexMax: "-", prowessBonus: "2 AP", value: 75}, 
+            {tier: 2, weight: 35, name: "Ring", class: "Jewelrey", armorClass: "-", proficiency: "-", strReq: "(Cha 11)", dexReq: "(Cha 11)", dexMax: "-", prowessBonus: "1 AP", value: 750}, 
+            {tier: 2, weight: 35, name: "Amulet", class: "Jewelrey", armorClass: "-", proficiency: "-", strReq: "(Int 11)", dexReq: "(Int 11)", dexMax: "-", prowessBonus: "2 AP", value: 900}, 
+            {tier: 2, weight: 11, name: "Heavy Leather Boots", class: "Feet", armorClass: "-", proficiency: "Medium", strReq: "-", dexReq: "15", dexMax: "-", prowessBonus: "Dashing", value: 170}, 
+            {tier: 2, weight: 11, name: "Chain Boots", class: "Feet", armorClass: "-", proficiency: "Medium", strReq: "14", dexReq: "-", dexMax: "-", prowessBonus: "2 AP", value: 190}, 
+            {tier: 2, weight: 11, name: "Heavy Leather Belt", class: "Belt", armorClass: "-", proficiency: "Medium", strReq: "-", dexReq: "13", dexMax: "-", prowessBonus: "2 AP", value: 210}, 
+            {tier: 2, weight: 11, name: "Vambrace", class: "Gloves", armorClass: "-", proficiency: "Light", strReq: "-", dexReq: "13", dexMax: "-", prowessBonus: "2 AP", value: 230}, 
+            {tier: 2, weight: 11, name: "Chain Gloves", class: "Gloves", armorClass: "-", proficiency: "Medium", strReq: "-", dexReq: "15", dexMax: "-", prowessBonus: "3 AP", value: 260}, 
+            {tier: 2, weight: 11, name: "Bone Mask", class: "Head", armorClass: "-", proficiency: "Light", strReq: "12", dexReq: "-", dexMax: "-", prowessBonus: "1 AP", value: 300}, 
+            {tier: 2, weight: 11, name: "Crown", class: "Head", armorClass: "-", proficiency: "Light", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "1 AP", value: 450}, 
+            {tier: 2, weight: 11, name: "Full Helm", class: "Head", armorClass: "-", proficiency: "Medium", strReq: "14", dexReq: "-", dexMax: "-", prowessBonus: "Fortified", value: 380}, 
+            {tier: 2, weight: 12, name: "Kite Shield", class: "Shield", armorClass: "2", proficiency: "Light, Shield", strReq: "11", dexReq: "13", dexMax: "-", prowessBonus: "3 AP", value: 410}, 
+            {tier: 2, weight: 12, name: "Large Shield", class: "Shield", armorClass: "2", proficiency: "Medium, Shield", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "5 AP", value: 430}, 
+            {tier: 2, weight: 12, name: "Hardened Leather Armor", class: "Torso", armorClass: "1", proficiency: "Light", strReq: "13", dexReq: "-", dexMax: "Dex Mod", prowessBonus: "4 AP", value: 350}, 
+            {tier: 2, weight: 12, name: "Serpentskin Armor", class: "Torso", armorClass: "2", proficiency: "Light", strReq: "13", dexReq: "-", dexMax: "Dex Mod", prowessBonus: "2 AP", value: 500}, 
+            {tier: 2, weight: 12, name: "Breast Plate", class: "Torso", armorClass: "4", proficiency: "Medium", strReq: "14", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "3 AP", value: 450}, 
+            {tier: 2, weight: 12, name: "Cuirass", class: "Torso", armorClass: "4", proficiency: "Medium", strReq: "15", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "Dex Max 3", value: 580}, 
+            {tier: 2, weight: 12, name: "Field Plate", class: "Torso", armorClass: "6", proficiency: "Medium", strReq: "16", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "Dex Max 3", value: 750}, 
+            {tier: 2, weight: 12, name: "Scale Mail", class: "Torso", armorClass: "4", proficiency: "Medium", strReq: "14", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "2 AP", value: 650}, 
+            {tier: 2, weight: 12, name: "Ring Mail", class: "Torso", armorClass: "4", proficiency: "Heavy", strReq: "12", dexReq: "-", dexMax: "-", prowessBonus: "Dex Max 2", value: 700}, 
+            {tier: 2, weight: 12, name: "Wyrmhide Armor", class: "Torso", armorClass: "6", proficiency: "Heavy", strReq: "16", dexReq: "-", dexMax: "-", prowessBonus: "Dex Max 3", value: 740}, 
+            {tier: 2, weight: 12, name: "Splint Mail", class: "Torso", armorClass: "7", proficiency: "Heavy", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "3 AP", value: 800}, 
+            {tier: 3, weight: 20, name: "Light Plate Boots", class: "Feet", armorClass: "-", proficiency: "Medium", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "Anchored", value: 1000}, 
+            {tier: 3, weight: 20, name: "Greaves", class: "Feet", armorClass: "-", proficiency: "Heavy", strReq: "17", dexReq: "-", dexMax: "-", prowessBonus: "3 AP", value: 1050}, 
+            {tier: 3, weight: 20, name: "Mithril Coil", class: "Belt", armorClass: "-", proficiency: "Medium", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "3 AP", value: 1100}, 
+            {tier: 3, weight: 20, name: "Plated Belt", class: "Belt", armorClass: "1", proficiency: "Heavy", strReq: "17", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 1150}, 
+            {tier: 3, weight: 20, name: "Light Plate Gloves", class: "Gloves", armorClass: "-", proficiency: "Medium", strReq: "14", dexReq: "-", dexMax: "-", prowessBonus: "Reinforced", value: 1200}, 
+            {tier: 3, weight: 20, name: "Diadem", class: "Head", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "2 AP", value: 1300}, 
+            {tier: 3, weight: 20, name: "Circlet", class: "Head", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "2 AP", value: 1400}, 
+            {tier: 3, weight: 20, name: "Great Helm", class: "Head", armorClass: "-", proficiency: "Heavy", strReq: "17", dexReq: "-", dexMax: "-", prowessBonus: "Reinforced", value: 1500}, 
+            {tier: 3, weight: 20, name: "Tower Shield", class: "Shield", armorClass: "2", proficiency: "Heavy, Shield", strReq: "17", dexReq: "-", dexMax: "-", prowessBonus: "+1 AC", value: 1600}, 
+            {tier: 3, weight: 21, name: "Shroud", class: "Torso", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "17", dexMax: "Dex Mod", prowessBonus: "4 AP", value: 1700}, 
+            {tier: 3, weight: 21, name: "Grand Robe", class: "Torso", armorClass: "1", proficiency: "-", strReq: "-", dexReq: "15", dexMax: "Dex Mod", prowessBonus: "3 AP", value: 1800}, 
+            {tier: 3, weight: 21, name: "Light Plate", class: "Torso", armorClass: "4", proficiency: "Medium", strReq: "13", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "3 AP", value: 1900}, 
+            {tier: 3, weight: 21, name: "Half Plate", class: "Torso", armorClass: "5", proficiency: "Medium", strReq: "15", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "2 AP", value: 2000}, 
+            {tier: 3, weight: 21, name: "Demonhide Armor", class: "Torso", armorClass: "3", proficiency: "Medium", strReq: "12", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "3 AP", value: 2200}, 
+            {tier: 3, weight: 21, name: "Archon Plate", class: "Torso", armorClass: "5", proficiency: "Medium", strReq: "17", dexReq: "-", dexMax: "Dex Max 2", prowessBonus: "5 AP", value: 2400}, 
+            {tier: 3, weight: 21, name: "Mesh Armor", class: "Torso", armorClass: "5", proficiency: "Heavy", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "Dex Max 2", value: 2500}, 
+            {tier: 3, weight: 21, name: "Tigulated Mail", class: "Torso", armorClass: "5", proficiency: "Heavy", strReq: "14", dexReq: "-", dexMax: "-", prowessBonus: "3 AP", value: 2600}, 
+            {tier: 3, weight: 21, name: "Full Plate Mail", class: "Torso", armorClass: "8", proficiency: "Heavy", strReq: "17", dexReq: "-", dexMax: "-", prowessBonus: "3 AP", value: 2800}, 
+            {tier: 3, weight: 21, name: "Ancient Plate", class: "Torso", armorClass: "7", proficiency: "Heavy", strReq: "16", dexReq: "-", dexMax: "-", prowessBonus: "4 AP", value: 3000}, 
+            {tier: 4, weight: 25, name: "Plate Gauntlets", class: "Gloves", armorClass: "1", proficiency: "Heavy", strReq: "16", dexReq: "-", dexMax: "-", prowessBonus: "Fortified", value: 4000}, 
+            {tier: 4, weight: 25, name: "Armet", class: "Head", armorClass: "1", proficiency: "Heavy", strReq: "15", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 4500}, 
+            {tier: 4, weight: 25, name: "Gothic Shield", class: "Shield", armorClass: "3", proficiency: "Heavy, Shield", strReq: "19", dexReq: "-", dexMax: "-", prowessBonus: "Anchored", value: 5000}, 
+            {tier: 4, weight: 25, name: "Aegis", class: "Shield", armorClass: "3", proficiency: "Heavy, Shield", strReq: "21", dexReq: "-", dexMax: "-", prowessBonus: "Braced", value: 6000}, 
+            {tier: 4, weight: 29, name: "Gothic Plate", class: "Torso", armorClass: "9", proficiency: "Heavy", strReq: "21", dexReq: "-", dexMax: "-", prowessBonus: "+1 AC", value: 7000}, 
+            {tier: 4, weight: 29, name: "Templar Plate", class: "Torso", armorClass: "8", proficiency: "Heavy", strReq: "19", dexReq: "-", dexMax: "-", prowessBonus: "5 AP", value: 8000}, 
+        ];
+const weaponTable = [
+            {tier:1, weight:4, name:"Club", quality:"Normal", class:"Club", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"-", dexReq:"-", weaponProperties:"Light", prowessBonus:"-", value:5}, 
+            {tier:1, weight:5, name:"Dagger", quality:"Normal", class:"Dagger", damage:"1d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Finesse, Light, Range (20/60)", prowessBonus:"Wide Critical", value:10}, 
+            {tier:1, weight:4, name:"Greatclub", quality:"Normal", class:"Greatclub", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"Two-handed", prowessBonus:"-", value:12}, 
+            {tier:1, weight:4, name:"Handaxe", quality:"Normal", class:"Handaxe", damage:"1d6 Slashing", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:15}, 
+            {tier:1, weight:4, name:"Javelin", quality:"Normal", class:"Javelin", damage:"1d6 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Range (30/120)", prowessBonus:"-", value:10}, 
+            {tier:1, weight:4, name:"Light Hammer", quality:"Normal", class:"Light Hammer", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:12}, 
+            {tier:1, weight:5, name:"Mace", quality:"Normal", class:"Mace", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:10}, 
+            {tier:1, weight:4, name:"Metal Knuckles", quality:"Normal", class:"Metal Knuckles", damage:"1d4 Bludgeoning", proficiency:"Simple Melee", strReq:"-", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:8}, 
+            {tier:1, weight:4, name:"Quarterstaff", quality:"Normal", class:"Quarterstaff", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Versatile (1d8)", prowessBonus:"Hinder", value:7}, 
+            {tier:1, weight:4, name:"Sickle", quality:"Normal", class:"Sickle", damage:"1d4 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Light", prowessBonus:"Bleed", value:15}, 
+            {tier:1, weight:4, name:"Spear", quality:"Normal", class:"Spear", damage:"1d6 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"11", weaponProperties:"Range (20/60), Versatile (1d8)", prowessBonus:"-", value:10}, 
+            {tier:1, weight:4, name:"Light Crossbow", quality:"Normal", class:"Light Crossbow", damage:"1d4 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"11", weaponProperties:"Thrown (20/60)", prowessBonus:"Debilitate", value:25}, 
+            {tier:1, weight:4, name:"Dart", quality:"Normal", class:"Dart", damage:"1d4 Piercing", proficiency:"Simple Ranged", strReq:"9", dexReq:"15", weaponProperties:"Loading, Two-handed, Range (80/320)", prowessBonus:"Aim", value:4}, 
+            {tier:1, weight:5, name:"Shortbow", quality:"Normal", class:"Shortbow", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"13", weaponProperties:"Range, Two-handed, (80/320)", prowessBonus:"-", value:35}, 
+            {tier:1, weight:4, name:"Sling", quality:"Normal", class:"Sling", damage:"1d6 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"11", weaponProperties:"Range (30/120)", prowessBonus:"-", value:20}, 
+            {tier:2, weight:9, name:"Battleaxe", quality:"Normal", class:"Battleaxe", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"Versatile (1d10)", prowessBonus:"Cleave", value:120}, 
+            {tier:2, weight:8, name:"Flail", quality:"Normal", class:"Flail", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"-", prowessBonus:"Brutal", value:110}, 
+            {tier:2, weight:8, name:"Glaive", quality:"Normal", class:"Glaive", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:150}, 
+            {tier:2, weight:9, name:"Greataxe", quality:"Normal", class:"Greataxe", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"-", weaponProperties:"Heavy, Two-handed,", prowessBonus:"Cleave", value:170}, 
+            {tier:2, weight:8, name:"Greatsword", quality:"Normal", class:"Greatsword", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"13", weaponProperties:"Heavy, Two-handed", prowessBonus:"Debilitate", value:180}, 
+            {tier:2, weight:8, name:"Halberd", quality:"Normal", class:"Halberd", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:160}, 
+            {tier:2, weight:8, name:"Lance", quality:"Normal", class:"Lance", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"13", weaponProperties:"Reach", prowessBonus:"Skewer", value:140}, 
+            {tier:2, weight:9, name:"Longsword", quality:"Normal", class:"Longsword", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"13", dexReq:"11", weaponProperties:"Versatile (1d10)", prowessBonus:"Debilitate", value:135}, 
+            {tier:2, weight:8, name:"Maul", quality:"Normal", class:"Maul", damage:"2d6 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Heavy, Two-handed", prowessBonus:"Stagger", value:155}, 
+            {tier:2, weight:8, name:"Morningstar", quality:"Normal", class:"Morningstar", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"-", prowessBonus:"Bleed", value:125}, 
+            {tier:2, weight:8, name:"Pike", quality:"Normal", class:"Pike", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"11", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:115}, 
+            {tier:2, weight:8, name:"Rapier", quality:"Normal", class:"Rapier", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"15", weaponProperties:"Finesse", prowessBonus:"-", value:145}, 
+            {tier:2, weight:8, name:"Scimitar", quality:"Normal", class:"Scimitar", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"11", dexReq:"14", weaponProperties:"Finesse, Light,", prowessBonus:"Wide Critical", value:130}, 
+            {tier:2, weight:8, name:"Scythe", quality:"Normal", class:"Scythe", damage:"3d4 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"15", weaponProperties:"Heavy, Two-handed", prowessBonus:"Cleave", value:100}, 
+            {tier:2, weight:9, name:"Shortsword", quality:"Normal", class:"Shortsword", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"11", dexReq:"-", weaponProperties:"Finesse, Light", prowessBonus:"Bleed", value:105}, 
+            {tier:2, weight:8, name:"Trident", quality:"Normal", class:"Trident", damage:"1d6 Piercing", proficiency:"Martial Melee", strReq:"13", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d8)", prowessBonus:"Brutal", value:120}, 
+            {tier:2, weight:9, name:"Warhammer", quality:"Normal", class:"Warhammer", damage:"1d8 Bludgeoning", proficiency:"Martial Melee", strReq:"15", dexReq:"-", weaponProperties:"Versatile (1d10)", prowessBonus:"Stagger", value:140}, 
+            {tier:2, weight:8, name:"War pick", quality:"Normal", class:"War pick", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"17", dexReq:"-", weaponProperties:"-", prowessBonus:"Sunder", value:95}, 
+            {tier:2, weight:8, name:"Whip", quality:"Normal", class:"Whip", damage:"1d4 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"15", weaponProperties:"Finesse, Reach", prowessBonus:"Hinder", value:85}, 
+            {tier:2, weight:8, name:"Blowgun", quality:"Normal", class:"Blowgun", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"13", weaponProperties:"Loading, Two-handed, Range (25/100)", prowessBonus:"Aim", value:50}, 
+            {tier:2, weight:10, name:"Hand Crossbow", quality:"Normal", class:"Hand Crossbow", damage:"1d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"19", weaponProperties:"Light, Loading, Range (30/120)", prowessBonus:"Wide Critical", value:125}, 
+            {tier:2, weight:8, name:"Heavy Crossbow", quality:"Normal", class:"Heavy Crossbow", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"13", dexReq:"15", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", prowessBonus:"Aim", value:175}, 
+            {tier:2, weight:10, name:"Longbow", quality:"Normal", class:"Longbow", damage:"1d4 Piercing", proficiency:"Martial Ranged", strReq:"11", dexReq:"17", weaponProperties:"Heavy, Two-handed, Range (150/600)", prowessBonus:"Stagger", value:150}, 
+            {tier:2, weight:7, name:"Cudgel", quality:"Exceptional", class:"Club", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"Light", prowessBonus:"-", value:19}, 
+            {tier:2, weight:9, name:"Dirk", quality:"Exceptional", class:"Dagger", damage:"2d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Finesse, Light, Range (20/60)", prowessBonus:"Wide Critical", value:37}, 
+            {tier:2, weight:7, name:"Gnarled Club", quality:"Exceptional", class:"Greatclub", damage:"1d12 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Two-handed", prowessBonus:"-", value:45}, 
+            {tier:2, weight:7, name:"Hatchet", quality:"Exceptional", class:"Handaxe", damage:"1d8 Slashing", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:56}, 
+            {tier:2, weight:7, name:"Harpoon", quality:"Exceptional", class:"Javelin", damage:"1d8 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Range (30/120)", prowessBonus:"-", value:37}, 
+            {tier:2, weight:7, name:"Knobkerrie", quality:"Exceptional", class:"Light Hammer", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:45}, 
+            {tier:2, weight:9, name:"Mallet", quality:"Exceptional", class:"Mace", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:37}, 
+            {tier:2, weight:7, name:"Claws", quality:"Exceptional", class:"Metal Knuckles", damage:"1d6 Bludgeoning", proficiency:"Simple Melee", strReq:"11", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:30}, 
+            {tier:2, weight:7, name:"War Staff", quality:"Exceptional", class:"Quarterstaff", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"12", dexReq:"-", weaponProperties:"Versatile (1d10)", prowessBonus:"Hinder", value:26}, 
+            {tier:2, weight:7, name:"Hand Scythe", quality:"Exceptional", class:"Sickle", damage:"1d6 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Light", prowessBonus:"Bleed", value:56}, 
+            {tier:2, weight:9, name:"Mancatcher", quality:"Exceptional", class:"Spear", damage:"1d8 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"12", weaponProperties:"Range (20/60), Versatile (1d10)", prowessBonus:"-", value:37}, 
+            {tier:2, weight:7, name:"Arbalest", quality:"Exceptional", class:"Light Crossbow", damage:"1d6 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"12", weaponProperties:"Thrown (20/60)", prowessBonus:"Debilitate", value:93}, 
+            {tier:2, weight:7, name:"Shuriken", quality:"Exceptional", class:"Dart", damage:"1d6 Piercing", proficiency:"Simple Ranged", strReq:"10", dexReq:"16", weaponProperties:"Loading, Two-handed, Range (80/320)", prowessBonus:"Aim", value:15}, 
+            {tier:2, weight:9, name:"Horse Bow", quality:"Exceptional", class:"Shortbow", damage:"1d10 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Range, Two-handed, (80/320)", prowessBonus:"-", value:130}, 
+            {tier:2, weight:7, name:"Hurler", quality:"Exceptional", class:"Sling", damage:"1d8 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"12", weaponProperties:"Range (30/120)", prowessBonus:"-", value:74}, 
+            {tier:3, weight:14, name:"Bearded Axe", quality:"Exceptional", class:"Battleaxe", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Versatile (1d12)", prowessBonus:"Cleave", value:444}, 
+            {tier:3, weight:11, name:"Shredder", quality:"Exceptional", class:"Flail", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"-", prowessBonus:"Brutal", value:407}, 
+            {tier:3, weight:11, name:"Bardiche", quality:"Exceptional", class:"Glaive", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:555}, 
+            {tier:3, weight:14, name:"Executioner", quality:"Exceptional", class:"Greataxe", damage:"2d8 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Heavy, Two-handed,", prowessBonus:"Cleave", value:629}, 
+            {tier:3, weight:14, name:"Claymore", quality:"Exceptional", class:"Greatsword", damage:"2d8 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"14", weaponProperties:"Heavy, Two-handed", prowessBonus:"Debilitate", value:666}, 
+            {tier:3, weight:11, name:"Poleaxe", quality:"Exceptional", class:"Halberd", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:592}, 
+            {tier:3, weight:11, name:"Ranseur", quality:"Exceptional", class:"Lance", damage:"2d8 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"14", weaponProperties:"Reach", prowessBonus:"Skewer", value:518}, 
+            {tier:3, weight:14, name:"Broad Sword", quality:"Exceptional", class:"Longsword", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"14", dexReq:"12", weaponProperties:"Versatile (1d12)", prowessBonus:"Debilitate", value:500}, 
+            {tier:3, weight:11, name:"Sledge", quality:"Exceptional", class:"Maul", damage:"2d8 Bludgeoning", proficiency:"Martial Melee", strReq:"19", dexReq:"-", weaponProperties:"Heavy, Two-handed", prowessBonus:"Stagger", value:574}, 
+            {tier:3, weight:11, name:"Flanged Mace", quality:"Exceptional", class:"Morningstar", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"-", prowessBonus:"Bleed", value:463}, 
+            {tier:3, weight:11, name:"Partisan", quality:"Exceptional", class:"Pike", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:426}, 
+            {tier:3, weight:11, name:"Spadroon", quality:"Exceptional", class:"Rapier", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"16", weaponProperties:"Finesse", prowessBonus:"-", value:537}, 
+            {tier:3, weight:11, name:"Sabre", quality:"Exceptional", class:"Scimitar", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"15", weaponProperties:"Finesse, Light,", prowessBonus:"Wide Critical", value:481}, 
+            {tier:3, weight:11, name:"Giant Thresher", quality:"Exceptional", class:"Scythe", damage:"4d4 Slashing", proficiency:"Martial Melee", strReq:"16", dexReq:"15", weaponProperties:"Heavy, Two-handed", prowessBonus:"Cleave", value:370}, 
+            {tier:3, weight:14, name:"Gladius", quality:"Exceptional", class:"Shortsword", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"-", weaponProperties:"Finesse, Light", prowessBonus:"Bleed", value:389}, 
+            {tier:3, weight:11, name:"Brandistock", quality:"Exceptional", class:"Trident", damage:"1d8 Piercing", proficiency:"Martial Melee", strReq:"14", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d10)", prowessBonus:"Brutal", value:444}, 
+            {tier:3, weight:14, name:"Battle Gavel", quality:"Exceptional", class:"Warhammer", damage:"1d10 Bludgeoning", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Versatile (1d12)", prowessBonus:"Stagger", value:518}, 
+            {tier:3, weight:11, name:"Crowbill", quality:"Exceptional", class:"War pick", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", prowessBonus:"Sunder", value:352}, 
+            {tier:3, weight:11, name:"Flog", quality:"Exceptional", class:"Whip", damage:"1d6 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"16", weaponProperties:"Finesse, Reach", prowessBonus:"Hinder", value:315}, 
+            {tier:3, weight:11, name:"Sarbacan", quality:"Exceptional", class:"Blowgun", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"14", weaponProperties:"Loading, Two-handed, Range (25/100)", prowessBonus:"Aim", value:185}, 
+            {tier:3, weight:14, name:"Stake Thrower", quality:"Exceptional", class:"Hand Crossbow", damage:"2d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"20", weaponProperties:"Light, Loading, Range (30/120)", prowessBonus:"Wide Critical", value:463}, 
+            {tier:3, weight:11, name:"Ballista", quality:"Exceptional", class:"Heavy Crossbow", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"14", dexReq:"16", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", prowessBonus:"Aim", value:648}, 
+            {tier:3, weight:11, name:"War Bow", quality:"Exceptional", class:"Longbow", damage:"1d6 Piercing", proficiency:"Martial Ranged", strReq:"12", dexReq:"18", weaponProperties:"Heavy, Two-handed, Range (150/600)", prowessBonus:"Stagger", value:555}, 
+            {tier:3, weight:10, name:"Truncheon", quality:"Elite", class:"Club", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"Light", prowessBonus:"-", value:86}, 
+            {tier:3, weight:13, name:"Stiletto", quality:"Elite", class:"Dagger", damage:"3d4 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Finesse, Light, Range (20/60)", prowessBonus:"Wide Critical", value:167}, 
+            {tier:3, weight:10, name:"Tyrant", quality:"Elite", class:"Greatclub", damage:"2d8 Bludgeoning", proficiency:"Simple Melee", strReq:"16", dexReq:"-", weaponProperties:"Two-handed", prowessBonus:"-", value:203}, 
+            {tier:3, weight:10, name:"Cleaver", quality:"Elite", class:"Handaxe", damage:"1d10 Slashing", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:252}, 
+            {tier:3, weight:10, name:"Dardo", quality:"Elite", class:"Javelin", damage:"1d10 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Range (30/120)", prowessBonus:"-", value:167}, 
+            {tier:3, weight:10, name:"Hurlbat", quality:"Elite", class:"Light Hammer", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Light, Range (20/60)", prowessBonus:"-", value:203}, 
+            {tier:3, weight:13, name:"Scepter", quality:"Elite", class:"Mace", damage:"1d10 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:167}, 
+            {tier:3, weight:10, name:"Kaiser Fist", quality:"Elite", class:"Metal Knuckles", damage:"1d8 Bludgeoning", proficiency:"Simple Melee", strReq:"13", dexReq:"-", weaponProperties:"-", prowessBonus:"-", value:135}, 
+            {tier:3, weight:10, name:"Rune Staff", quality:"Elite", class:"Quarterstaff", damage:"1d10 Bludgeoning", proficiency:"Simple Melee", strReq:"14", dexReq:"-", weaponProperties:"Versatile (1d12)", prowessBonus:"Hinder", value:117}, 
+            {tier:3, weight:10, name:"Thresher", quality:"Elite", class:"Sickle", damage:"1d8 Slashing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Light", prowessBonus:"Bleed", value:252}, 
+            {tier:3, weight:10, name:"Yari", quality:"Elite", class:"Spear", damage:"1d10 Piercing", proficiency:"Simple Melee", strReq:"-", dexReq:"14", weaponProperties:"Range (20/60), Versatile (1d12)", prowessBonus:"-", value:167}, 
+            {tier:3, weight:10, name:"Battle Crossbow", quality:"Elite", class:"Light Crossbow", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Thrown (20/60)", prowessBonus:"Debilitate", value:419}, 
+            {tier:3, weight:10, name:"Kunai", quality:"Elite", class:"Dart", damage:"1d8 Piercing", proficiency:"Simple Ranged", strReq:"12", dexReq:"18", weaponProperties:"Loading, Two-handed, Range (80/320)", prowessBonus:"Aim", value:68}, 
+            {tier:3, weight:12, name:"Composite Bow", quality:"Elite", class:"Shortbow", damage:"1d12 Piercing", proficiency:"Simple Ranged", strReq:"-", dexReq:"16", weaponProperties:"Range, Two-handed, (80/320)", prowessBonus:"-", value:585}, 
+            {tier:3, weight:10, name:"Hand Trebuchet", quality:"Elite", class:"Sling", damage:"1d10 Bludgeoning", proficiency:"Simple Ranged", strReq:"-", dexReq:"14", weaponProperties:"Range (30/120)", prowessBonus:"-", value:333}, 
+            {tier:4, weight:20, name:"Tabar", quality:"Elite", class:"Battleaxe", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Versatile (2d6)", prowessBonus:"Cleave", value:1998}, 
+            {tier:4, weight:16, name:"Scorpion Flail", quality:"Elite", class:"Flail", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", prowessBonus:"Brutal", value:1832}, 
+            {tier:4, weight:16, name:"Kwan Dao", quality:"Elite", class:"Glaive", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:2498}, 
+            {tier:4, weight:20, name:"Gothic Axe", quality:"Elite", class:"Greataxe", damage:"3d6 Slashing", proficiency:"Martial Melee", strReq:"20", dexReq:"-", weaponProperties:"Heavy, Two-handed,", prowessBonus:"Cleave", value:2831}, 
+            {tier:4, weight:20, name:"Zweihander", quality:"Elite", class:"Greatsword", damage:"3d6 Slashing", proficiency:"Martial Melee", strReq:"17", dexReq:"14", weaponProperties:"Heavy, Two-handed", prowessBonus:"Debilitate", value:2997}, 
+            {tier:4, weight:16, name:"Bec de Corbin", quality:"Elite", class:"Halberd", damage:"2d6 Slashing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:2664}, 
+            {tier:4, weight:16, name:"Spetum", quality:"Elite", class:"Lance", damage:"3d6 Piercing", proficiency:"Martial Melee", strReq:"19", dexReq:"14", weaponProperties:"Reach", prowessBonus:"Skewer", value:2331}, 
+            {tier:4, weight:20, name:"Bastard Sword", quality:"Elite", class:"Longsword", damage:"1d12 Slashing", proficiency:"Martial Melee", strReq:"15", dexReq:"12", weaponProperties:"Versatile (2d6)", prowessBonus:"Debilitate", value:2250}, 
+            {tier:4, weight:16, name:"Driver", quality:"Elite", class:"Maul", damage:"3d6 Bludgeoning", proficiency:"Martial Melee", strReq:"21", dexReq:"-", weaponProperties:"Heavy, Two-handed", prowessBonus:"Stagger", value:2583}, 
+            {tier:4, weight:16, name:"Devil Star", quality:"Elite", class:"Morningstar", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"-", prowessBonus:"Bleed", value:2084}, 
+            {tier:4, weight:16, name:"Guisarme", quality:"Elite", class:"Pike", damage:"2d6 Piercing", proficiency:"Martial Melee", strReq:"19", dexReq:"12", weaponProperties:"Heavy, Two-handed, Reach", prowessBonus:"-", value:1917}, 
+            {tier:4, weight:16, name:"Epee", quality:"Elite", class:"Rapier", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"-", dexReq:"18", weaponProperties:"Finesse", prowessBonus:"-", value:2417}, 
+            {tier:4, weight:16, name:"Falchion", quality:"Elite", class:"Scimitar", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"12", dexReq:"16", weaponProperties:"Finesse, Light,", prowessBonus:"Wide Critical", value:2165}, 
+            {tier:4, weight:16, name:"Grimm", quality:"Elite", class:"Scythe", damage:"5d4 Slashing", proficiency:"Martial Melee", strReq:"18", dexReq:"15", weaponProperties:"Heavy, Two-handed", prowessBonus:"Cleave", value:1665}, 
+            {tier:4, weight:19, name:"Tulwar", quality:"Elite", class:"Shortsword", damage:"1d10 Slashing", proficiency:"Martial Melee", strReq:"14", dexReq:"-", weaponProperties:"Finesse, Light", prowessBonus:"Bleed", value:1751}, 
+            {tier:4, weight:16, name:"War Fork", quality:"Elite", class:"Trident", damage:"1d10 Piercing", proficiency:"Martial Melee", strReq:"16", dexReq:"-", weaponProperties:"Range (20/60), Versatile (1d12)", prowessBonus:"Brutal", value:1998}, 
+            {tier:4, weight:20, name:"Skullcracker", quality:"Elite", class:"Warhammer", damage:"1d12 Bludgeoning", proficiency:"Martial Melee", strReq:"18", dexReq:"-", weaponProperties:"Versatile (2d6)", prowessBonus:"Stagger", value:2331}, 
+            {tier:4, weight:16, name:"Mattock", quality:"Elite", class:"War pick", damage:"1d12 Piercing", proficiency:"Martial Melee", strReq:"20", dexReq:"-", weaponProperties:"-", prowessBonus:"Sunder", value:1584}, 
+            {tier:4, weight:16, name:"Scourge", quality:"Elite", class:"Whip", damage:"1d8 Slashing", proficiency:"Martial Melee", strReq:"-", dexReq:"18", weaponProperties:"Finesse, Reach", prowessBonus:"Hinder", value:1418}, 
+            {tier:4, weight:16, name:"Sumpitan", quality:"Elite", class:"Blowgun", damage:"1d10 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"16", weaponProperties:"Loading, Two-handed, Range (25/100)", prowessBonus:"Aim", value:833}, 
+            {tier:4, weight:20, name:"Bolt Pistol", quality:"Elite", class:"Hand Crossbow", damage:"3d4 Piercing", proficiency:"Martial Ranged", strReq:"-", dexReq:"22", weaponProperties:"Light, Loading, Range (30/120)", prowessBonus:"Wide Critical", value:2084}, 
+            {tier:4, weight:16, name:"Colossus Crossbow", quality:"Elite", class:"Heavy Crossbow", damage:"1d10 Piercing", proficiency:"Martial Ranged", strReq:"14", dexReq:"17", weaponProperties:"Heavy, Loading, Two-handed, Range (100/400)", prowessBonus:"Aim", value:2916}, 
+            {tier:4, weight:20, name:"Siege Bow", quality:"Elite", class:"Longbow", damage:"1d8 Piercing", proficiency:"Martial Ranged", strReq:"12", dexReq:"19", weaponProperties:"Heavy, Two-handed, Range (150/600)", prowessBonus:"Stagger", value:2498}, 
+        ];
 const prefixTable = [
-{min:1, max:4, name:"Obsidian", benefit:"When you take Bludgeoning damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:5, max:8, name:"Ebony", benefit:"When you take Piercing damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:9, max:12, name:"Jet", benefit:"When you take Slashing damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:13, max:16, name:"Jade", benefit:"When you take Acid damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:17, max:20, name:"Sapphire", benefit:"When you take Cold damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:21, max:24, name:"Ruby", benefit:"When you take Fire damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:25, max:28, name:"Kalkite", benefit:"When you take Force damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:29, max:32, name:"Topaz", benefit:"When you take Lightning damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:33, max:36, name:"Ivory", benefit:"When you take Necrotic damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:37, max:40, name:"Emerald", benefit:"When you take Poison damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:41, max:44, name:"Amethyst", benefit:"When you take Psychic damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:45, max:48, name:"Pearl", benefit:"When you take Radiant damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:49, max:52, name:"Amber", benefit:"When you take Thunder damage, you can reduce it by 1d8, to a minimum of 1.", multiplier: 2},
-{min:53, max:64, name:"Saintly", benefit:"When a non-living enemy attacks you, increase your AC by 1.", multiplier: 2},
-{min:65, max:74, name:"Sinful", benefit:"When a living enemy attacks you, increase your AC by 1.", multiplier: 2},
-{min:75, max:84, name:"Entrenched", benefit:"Your AC against ranged attacks is increased by 1.", multiplier: 2},
-{min:85, max:92, name:"Sly", benefit:"When you take damage from a weapon attack or spell, you regain 1d4-1 Spell Points.", multiplier: 2},
-{min:93, max:100, name:"Calculating", benefit:"When you take damage from a weapon attack or spell, you regain 1d6-1 Spell Points.", multiplier: 2},
-{min:101, max:118, name:"Glorious", benefit:"You gain a +1 bonus to your AC.", multiplier: 4},
-{min:119, max:132, name:"Valiant", benefit:"You gain a bonus to your AC equal to the number of enemies adjacent to you.", multiplier: 4},
-{min:133, max:146, name:"Blessed", benefit:"You gain a bonus to your AC equal to the number of allies adjacent to you.", multiplier: 4},
-{min:147, max:150, name:"Durasteel", benefit:"You gain resistance to Bludgeoning damage.", multiplier: 4},
-{min:151, max:154, name:"Khaydarin", benefit:"You gain resistance to Piercing damage.", multiplier: 4},
-{min:155, max:158, name:"Duralumin", benefit:"You gain resistance to Slashing damage.", multiplier: 4},
-{min:159, max:161, name:"Black", benefit:"You gain resistance to Acid damage.", multiplier: 4},
-{min:162, max:165, name:"White", benefit:"You gain resistance to Cold damage.", multiplier: 4},
-{min:166, max:169, name:"Red", benefit:"You gain resistance to Fire damage.", multiplier: 4},
-{min:170, max:173, name:"Kyber", benefit:"You gain resistance to Force damage.", multiplier: 4},
-{min:174, max:177, name:"Blue", benefit:"You gain resistance to Lightning damage.", multiplier: 4},
-{min:178, max:181, name:"Onyx", benefit:"You gain resistance to Necrotic damage.", multiplier: 4},
-{min:182, max:185, name:"Green", benefit:"You gain resistance to Poison damage.", multiplier: 4},
-{min:186, max:188, name:"Gemmed", benefit:"You gain resistance to Psychic damage.", multiplier: 4},
-{min:189, max:191, name:"Astral", benefit:"You gain resistance to Radiant damage.", multiplier: 4},
-{min:192, max:194, name:"Purple", benefit:"You gain resistance to Thunder damage.", multiplier: 4},
-{min:195, max:203, name:"Holy", benefit:"When a non-living enemy attacks you, increase your AC by 2.", multiplier: 4},
-{min:204, max:212, name:"Wicked", benefit:"When a living enemy attacks you, increase your AC by 2.", multiplier: 4},
-{min:213, max:221, name:"Buttressed", benefit:"Your AC against ranged attacks is increased by 2.", multiplier: 4},
-{min:222, max:231, name:"Unseen", benefit:"While wearing this item, you are invisible to creatures more than 30 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.", multiplier: 4},
-{min:232, max:241, name:"Stalking", benefit:"While wearing this item, you can choose to become invisible at the start of your turn. When you perform any action, bonus action, or reaction, you become visible again.", multiplier: 4},
-{min:242, max:261, name:"Exalted", benefit:"You gain a +2 bonus to your AC.", multiplier: 7},
-{min:262, max:277, name:"Godly", benefit:"When a non-living enemy attacks you, increase your AC by 3.", multiplier: 7},
-{min:278, max:293, name:"Desecrated", benefit:"When a living enemy attacks you, increase your AC by 3.", multiplier: 7},
-{min:294, max:309, name:"Bastioned", benefit:"Your AC against ranged attacks is increased by 3.", multiplier: 7},
-{min:310, max:325, name:"Vulpine", benefit:"When you take damage from a weapon attack or spell, you regain 1d4+1 Spell Points.", multiplier: 7},
-{min:326, max:341, name:"Corvine", benefit:"When you take damage from a weapon attack or spell, you regain 1d6+1 Spell Points.", multiplier: 7},
-{min:342, max:357, name:"Hidden", benefit:"While wearing this item, you are invisible to creatures more than 20 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.", multiplier: 7},
-{min:358, max:383, name:"Triumphant", benefit:"You gain a +3 bonus to your AC.", multiplier: 10},
-{min:384, max:405, name:"Veiled", benefit:"While wearing this item, you are invisible to creatures more than 10 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.", multiplier: 10},
-{min:406, max:421, name:"Newt's", benefit:"You gain 2 spell points that are regained after a long rest.", multiplier: 2},
-{min:422, max:435, name:"Lizard's", benefit:"You gain 3 spell points that are regained after a long rest.", multiplier: 2},
-{min:436, max:455, name:"Snake's", benefit:"You gain 5 spell points that are regained after a long rest.", multiplier: 4},
-{min:456, max:473, name:"Crocodile's", benefit:"You gain 6 spell points that are regained after a long rest.", multiplier: 4},
-{min:474, max:489, name:"Serpent's", benefit:"You gain 7 spell points that are regained after a long rest.", multiplier: 4},
-{min:490, max:509, name:"Granite", benefit:"When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest.", multiplier: 4},
-{min:510, max:525, name:"Pyrite", benefit:"When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 3. You can change the feature after a long rest.", multiplier: 4},
-{min:526, max:549, name:"Cobalt", benefit:"When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 1. You can change the feature after a long rest.", multiplier: 4},
-{min:550, max:573, name:"Viper's", benefit:"You gain 9 spell points that are regained after a long rest.", multiplier: 7},
-{min:574, max:595, name:"Basilisk's", benefit:"You gain 10 spell points that are regained after a long rest.", multiplier: 7},
-{min:596, max:619, name:"Opal", benefit:"When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest.", multiplier: 7},
-{min:620, max:641, name:"Azure", benefit:"When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest.", multiplier: 7},
-{min:642, max:661, name:"Lapis", benefit:"When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 2. You can change these features after a long rest.", multiplier: 7},
-{min:662, max:679, name:"Diamond", benefit:"When you get this item, choose 2 class features that recharge after a long rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest.", multiplier: 7},
-{min:680, max:707, name:"Wyrm's", benefit:"You gain 11 spell points that are regained after a long rest.", multiplier: 10},
-{min:708, max:733, name:"Hydra's", benefit:"You gain 13 spell points that are regained after a long rest.", multiplier: 10},
-{min:734, max:745, name:"Bronze", benefit:"You gain a +1 to attack rolls.", multiplier: 2},
-{min:746, max:757, name:"Iron", benefit:"You gain a +1 to damage rolls.", multiplier: 2},
-{min:758, max:770, name:"+1", benefit:"You gain a +1 to attack and damage rolls.", multiplier: 2},
-{min:771, max:780, name:"Pewter", benefit:"You gain a +2 to attack rolls.", multiplier: 2},
-{min:781, max:790, name:"Steel", benefit:"You gain a +2 to damage rolls.", multiplier: 2},
-{min:791, max:803, name:"Deadly", benefit:"On a d20 weapon attack roll of 20, you can add one additional weapon damage die.", multiplier: 2},
-{min:804, max:814, name:"Vicious", benefit:"On a d20 weapon attack roll of 19-20, you can add one additional weapon damage die.", multiplier: 2},
-{min:815, max:823, name:"Savage", benefit:"On a d20 weapon attack roll of 18-20, you can add one additional weapon damage die.", multiplier: 2},
-{min:824, max:830, name:"Vitriolic", benefit:"This weapon additionally deals 1d6 extra Acid damage.", multiplier: 2},
-{min:831, max:837, name:"Frozen", benefit:"This weapon additionally deals 1d6 extra Cold damage.", multiplier: 2},
-{min:838, max:844, name:"Flaming", benefit:"This weapon additionally deals 1d6 extra Fire damage.", multiplier: 2},
-{min:845, max:851, name:"Forceful", benefit:"This weapon additionally deals 1d6 extra Force damage.", multiplier: 2},
-{min:852, max:858, name:"Shocking", benefit:"This weapon additionally deals 1d6 extra Lightning damage.", multiplier: 2},
-{min:859, max:865, name:"Decaying", benefit:"This weapon additionally deals 1d6 extra Necrotic damage.", multiplier: 2},
-{min:866, max:872, name:"Poisoned", benefit:"This weapon additionally deals 1d6 extra Poison damage.", multiplier: 2},
-{min:873, max:879, name:"Tormenting", benefit:"This weapon additionally deals 1d6 extra Psychic damage.", multiplier: 2},
-{min:880, max:886, name:"Radiant", benefit:"This weapon additionally deals 1d6 extra Radiant damage.", multiplier: 2},
-{min:887, max:893, name:"Booming", benefit:"This weapon additionally deals 1d6 extra Thunder damage.", multiplier: 2},
-{min:894, max:905, name:"Jagged", benefit:"When you deal critical damage, you can add 1d6 when determining the extra damage.", multiplier: 2},
-{min:906, max:914, name:"Viridian", benefit:"When you hit a creature with this weapon, its AC is reduced by 1, constitution save ends. This effect does not stack.", multiplier: 2},
-{min:915, max:923, name:"Crimson", benefit:"When you hit a creature with this weapon, its attack bonus is reduced by 1, constitution save ends. This effect does not stack.", multiplier: 2},
-{min:924, max:935, name:"Crusader's", benefit:"You gain 1 bonus damage for every creature adjacent to you.", multiplier: 2},
-{min:936, max:947, name:"Berserker's", benefit:"You gain 1 bonus damage for every creature adjacent to the target.", multiplier: 2},
-{min:948, max:959, name:"Exploding", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again for bonus damage. This effect can occur multiple times.", multiplier: 2},
-{min:960, max:973, name:"Erupting", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is fire damage. This effect can occur multiple times.", multiplier: 2},
-{min:974, max:987, name:"Rupturing", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is force damage. This effect can occur multiple times.", multiplier: 2},
-{min:988, max:1001, name:"Detonating", benefit:"When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is thunder damage.  This effect can occur multiple times.", multiplier: 2},
-{min:1002, max:1011, name:"Howling", benefit:"When you hit a creature with a melee attack, they must make a DC 14 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you.", multiplier: 2},
-{min:1012, max:1030, name:"+2", benefit:"You gain a +2 to attack and damage rolls.", multiplier: 4},
-{min:1031, max:1049, name:"Gold", benefit:"You gain a +3 to attack rolls.", multiplier: 4},
-{min:1050, max:1068, name:"Platinum", benefit:"You gain a +3 to damage rolls.", multiplier: 4},
-{min:1069, max:1085, name:"Adamantine", benefit:"Your critical hit range is increased by 1.", multiplier: 4},
-{min:1086, max:1100, name:"Ruthless", benefit:"On a d20 weapon attack roll of 17-20, you can add one additional weapon damage die.", multiplier: 4},
-{min:1101, max:1115, name:"Merciless", benefit:"On a d20 weapon attack roll of 16-20, you can add one additional weapon damage die.", multiplier: 4},
-{min:1116, max:1132, name:"Corrosive", benefit:"This weapon additionally deals 1d8 extra Acid damage.", multiplier: 4},
-{min:1133, max:1149, name:"Arctic", benefit:"This weapon additionally deals 1d8 extra Cold damage.", multiplier: 4},
-{min:1150, max:1166, name:"Ashen", benefit:"This weapon additionally deals 1d8 extra Fire damage.", multiplier: 4},
-{min:1167, max:1183, name:"Potent", benefit:"This weapon additionally deals 1d8 extra Force damage.", multiplier: 4},
-{min:1184, max:1200, name:"Electric", benefit:"This weapon additionally deals 1d8 extra Lightning damage.", multiplier: 4},
-{min:1201, max:1217, name:"Rotting", benefit:"This weapon additionally deals 1d8 extra Necrotic damage.", multiplier: 4},
-{min:1218, max:1234, name:"Venomous", benefit:"This weapon additionally deals 1d8 extra Poison damage.", multiplier: 4},
-{min:1235, max:1251, name:"Traumatic", benefit:"This weapon additionally deals 1d8 extra Psychic damage.", multiplier: 4},
-{min:1252, max:1268, name:"Luminous", benefit:"This weapon additionally deals 1d8 extra Radiant damage.", multiplier: 4},
-{min:1269, max:1285, name:"Crashing", benefit:"This weapon additionally deals 1d8 extra Thunder damage.", multiplier: 4},
-{min:1286, max:1304, name:"Heavy", benefit:"When you deal critical damage, you can add 1d10 when determining the extra damage.", multiplier: 4},
-{min:1305, max:1323, name:"Brutal", benefit:"When you deal critical damage, you can add 2d6 when determining the extra damage.", multiplier: 4},
-{min:1324, max:1340, name:"Beryl", benefit:"When you hit a creature with this weapon, its AC is reduced by 2, constitution save ends. This effect does not stack.", multiplier: 4},
-{min:1341, max:1357, name:"Scarlet", benefit:"When you hit a creature with this weapon, its attack bonus is reduced by 2, constitution save ends. This effect does not stack.", multiplier: 4},
-{min:1358, max:1376, name:"Wailing", benefit:"When you hit a creature with a melee attack, they must make a DC 16 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you.", multiplier: 4},
-{min:1377, max:1393, name:"Dreadful", benefit:"After hitting a creature with this weapon, the target is frightened of you until the end of its next turn.", multiplier: 4},
-{min:1394, max:1412, name:"Blighted", benefit:"After hitting a creature with this weapon, the target is poisoned until the end of its next turn.", multiplier: 4},
-{min:1413, max:1427, name:"Exhausting", benefit:"After hitting a creature with this weapon, the target is under the effect of the Slow spell  until the end of its next turn.", multiplier: 4},
-{min:1428, max:1442, name:"Chaotic", benefit:"After hitting a creature with this weapon, the target uses its action at the start of its turn to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target can act normally.", multiplier: 4},
-{min:1443, max:1466, name:"+3", benefit:"You gain a +3 to attack and damage rolls.", multiplier: 7},
-{min:1467, max:1492, name:"Mithril", benefit:"Your critical hit range is increased by 2.", multiplier: 7},
-{min:1493, max:1510, name:"Caustic", benefit:"This weapon additionally deals 1d10 extra Acid damage.", multiplier: 7},
-{min:1511, max:1528, name:"Glacial", benefit:"This weapon additionally deals 1d10 extra Cold damage.", multiplier: 7},
-{min:1529, max:1546, name:"Blazing", benefit:"This weapon additionally deals 1d10 extra Fire damage.", multiplier: 7},
-{min:1547, max:1564, name:"Mystic", benefit:"This weapon additionally deals 1d10 extra Force damage.", multiplier: 7},
-{min:1565, max:1582, name:"Stormy", benefit:"This weapon additionally deals 1d10 extra Lightning damage.", multiplier: 7},
-{min:1583, max:1600, name:"Deathly", benefit:"This weapon additionally deals 1d10 extra Necrotic damage.", multiplier: 7},
-{min:1601, max:1618, name:"Toxic", benefit:"This weapon additionally deals 1d10 extra Poison damage.", multiplier: 7},
-{min:1619, max:1636, name:"Harrowing", benefit:"This weapon additionally deals 1d10 extra Psychic damage.", multiplier: 7},
-{min:1637, max:1654, name:"Hallowed", benefit:"This weapon additionally deals 1d10 extra Radiant damage.", multiplier: 7},
-{min:1655, max:1672, name:"Roaring", benefit:"This weapon additionally deals 1d10 extra Thunder damage.", multiplier: 7},
-{min:1673, max:1695, name:"Massive", benefit:"When you deal critical damage, you can add 2d10 when determining the extra damage.", multiplier: 7},
-{min:1696, max:1722, name:"Templar's", benefit:"You gain 2 bonus damage for every creature adjacent to you.", multiplier: 7},
-{min:1723, max:1749, name:"Fanatic's", benefit:"You gain 2 bonus damage for every creature adjacent to the target.", multiplier: 7},
-{min:1750, max:1770, name:"Obscurring", benefit:"After hitting a creature with this weapon, the target is blinded until the end of its next turn.", multiplier: 7},
-{min:1771, max:1792, name:"Nightmare", benefit:"After hitting a creature with this weapon, the target is frightened of you, save ends.", multiplier: 7},
-{min:1793, max:1816, name:"Pestilent", benefit:"After hitting a creature with this weapon, the target is poisoned, save ends.", multiplier: 7},
-{min:1817, max:1838, name:"Discordant", benefit:"After hitting a creature with this weapon, the target uses its action to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target does nothing that turn.", multiplier: 7},
-{min:1839, max:1859, name:"Phasing", benefit:"After hitting a creature with this weapon,  the target shifts to the ethereal plane until the end of its next turn.", multiplier: 7},
-{min:1860, max:1892, name:"Orichalcum", benefit:"Your critical hit range is increased by 3.", multiplier: 10},
-{min:1893, max:1919, name:"Crippling", benefit:"After hitting a creature with this weapon, the target is incapacitated until the end of its next turn.", multiplier: 10},
-{min:1920, max:1946, name:"Blinding", benefit:"After hitting a creature with this weapon, the target is blinded, save ends.", multiplier: 10},
-{min:1947, max:1973, name:"Subjugating", benefit:"After hitting a creature with this weapon, the target is incapacitated, save ends.", multiplier: 10},
-{min:1974, max:2000, name:"Overwhelming", benefit:"After hitting a creature with this weapon, the target is under the effect of the Slow spell  save ends.", multiplier: 10},
-   ];
+            {tier: 1, type: "armor", weight: 4, name: "Obsidian", property: "When you take Bludgeoning damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Ebony", property: "When you take Piercing damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Jet", property: "When you take Slashing damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Jade", property: "When you take Acid damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Sapphire", property: "When you take Cold damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Ruby", property: "When you take Fire damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Kalkite", property: "When you take Force damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Topaz", property: "When you take Lightning damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Ivory", property: "When you take Necrotic damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Emerald", property: "When you take Poison damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Amethyst", property: "When you take Psychic damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Pearl", property: "When you take Radiant damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 4, name: "Amber", property: "When you take Thunder damage, you can reduce it by 1d8, to a minimum of 1.", category: "damageReduction", multiplier: 2},
+            {tier: 1, type: "armor", weight: 12, name: "Saintly", property: "When a non-living enemy attacks you, increase your AC by 1.", category: "acConditional", multiplier: 2},
+            {tier: 1, type: "armor", weight: 10, name: "Sinful", property: "When a living enemy attacks you, increase your AC by 1.", category: "acConditional", multiplier: 2},
+            {tier: 1, type: "armor", weight: 10, name: "Entrenched", property: "Your AC against ranged attacks is increased by 1.  ", category: "acConditional", multiplier: 2},
+            {tier: 1, type: "armor", weight: 8, name: "Sly", property: "When you take damage from a weapon attack or spell, you regain 1d4-1 Spell Points.  ", category: "spRegen", multiplier: 2},
+            {tier: 1, type: "armor", weight: 8, name: "Calculating", property: "When you take damage from a weapon attack or spell, you regain 1d6-1 Spell Points.  ", category: "spRegen", multiplier: 2},
+            {tier: 2, type: "armor", weight: 18, name: "Glorious", property: "You gain a +1 bonus to your AC. ", category: "acBonus", multiplier: 4},
+            {tier: 2, type: "armor", weight: 14, name: "Valiant ", property: "You gain a bonus to your AC equal to the number of enemies adjacent to you ", category: "acConditional", multiplier: 4},
+            {tier: 2, type: "armor", weight: 14, name: "Blessed", property: "You gain a bonus to your AC equal to the number of allies adjacent to you ", category: "acConditional", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Durasteel", property: "You gain resistance to Bludgeoning damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Khaydarin", property: "You gain resistance to Piercing damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Duralumin", property: "You gain resistance to Slashing damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 3, name: "Black", property: "You gain resistance to Acid damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "White", property: "You gain resistance to Cold damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Red", property: "You gain resistance to Fire damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Kyber", property: "You gain resistance to Force damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Blue", property: "You gain resistance to Lightning damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Onyx", property: "You gain resistance to Necrotic damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 4, name: "Green", property: "You gain resistance to Poison damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 3, name: "Gemmed", property: "You gain resistance to Psychic damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 3, name: "Astral", property: "You gain resistance to Radiant damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 3, name: "Purple", property: "You gain resistance to Thunder damage. ", category: "damageResistance", multiplier: 4},
+            {tier: 2, type: "armor", weight: 9, name: "Holy", property: "When a non-living enemy attacks you, increase your AC by 2.", category: "acConditional", multiplier: 4},
+            {tier: 2, type: "armor", weight: 9, name: "Wicked", property: "When a living enemy attacks you, increase your AC by 2.", category: "acConditional", multiplier: 4},
+            {tier: 2, type: "armor", weight: 9, name: "Buttressed", property: "Your AC against ranged attacks is increased by 2.  ", category: "acConditional", multiplier: 4},
+            {tier: 2, type: "armor", weight: 10, name: "Unseen", property: "While wearing this item, you are invisible to creatures more than 30 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  ", category: "invisible", multiplier: 4},
+            {tier: 2, type: "armor", weight: 10, name: "Stalking", property: "While wearing this item, you can choose to become invisible at the start of your turn. When you perform any action, bonus action, or reaction, you become visible again.   ", category: "invisible", multiplier: 4},
+            {tier: 3, type: "armor", weight: 20, name: "Exalted", property: "You gain a +2 bonus to your AC. ", category: "acBonus", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Godly", property: "When a non-living enemy attacks you, increase your AC by 3.", category: "acConditional", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Desecrated", property: "When a living enemy attacks you, increase your AC by 3.", category: "acConditional", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Bastioned", property: "Your AC against ranged attacks is increased by 3.  ", category: "acConditional", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Vulpine", property: "When you take damage from a weapon attack or spell, you regain 1d4+1 Spell Points.  ", category: "spRegen", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Corvine", property: "When you take damage from a weapon attack or spell, you regain 1d6+1 Spell Points.  ", category: "spRegen", multiplier: 7},
+            {tier: 3, type: "armor", weight: 16, name: "Hidden", property: "While wearing this item, you are invisible to creatures more than 20 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  ", category: "invisible", multiplier: 7},
+            {tier: 4, type: "armor", weight: 26, name: "Triumphant", property: "You gain a +3 bonus to your AC. ", category: "acBonus", multiplier: 10},
+            {tier: 4, type: "armor", weight: 22, name: "Veiled", property: "While wearing this item, you are invisible to creatures more than 10 feet away from you. When you make an attack or cast a spell, you become visible until the end of the turn.  ", category: "invisible", multiplier: 10},
+            {tier: 1, type: "both", weight: 16, name: "Newt's", property: "You gain 2 spell points that are regained after a long rest. ", category: "spMax", multiplier: 2},
+            {tier: 1, type: "both", weight: 14, name: "Lizard's", property: "You gain 3 spell points that are regained after a long rest. ", category: "spMax", multiplier: 2},
+            {tier: 2, type: "both", weight: 20, name: "Snake's", property: "You gain 5 spell points that are regained after a long rest. ", category: "spMax", multiplier: 4},
+            {tier: 2, type: "both", weight: 18, name: "Crocodile's", property: "You gain 6 spell points that are regained after a long rest. ", category: "spMax", multiplier: 4},
+            {tier: 2, type: "both", weight: 16, name: "Serpent's", property: "You gain 7 spell points that are regained after a long rest. ", category: "spMax", multiplier: 4},
+            {tier: 2, type: "both", weight: 20, name: "Granite", property: "When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest.", category: "classFeatures", multiplier: 4},
+            {tier: 2, type: "both", weight: 16, name: "Pyrite", property: "When you get this item, choose a class feature that recharges after a short rest. Increase the number of times you can use that feature by 3. You can change the feature after a long rest.", category: "classFeatures", multiplier: 4},
+            {tier: 2, type: "both", weight: 24, name: "Cobalt", property: "When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 1. You can change the feature after a long rest.", category: "classFeatures", multiplier: 4},
+            {tier: 3, type: "both", weight: 24, name: "Viper's", property: "You gain 9 spell points that are regained after a long rest. ", category: "spMax", multiplier: 7},
+            {tier: 3, type: "both", weight: 22, name: "Basilisk's", property: "You gain 10 spell points that are regained after a long rest. ", category: "spMax", multiplier: 7},
+            {tier: 3, type: "both", weight: 24, name: "Opal", property: "When you get this item, choose a class feature that recharges after a Long rest. Increase the number of times you can use that feature by 2. You can change the feature after a long rest.", category: "classFeatures", multiplier: 7},
+            {tier: 3, type: "both", weight: 22, name: "Azure", property: "When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest.", category: "classFeatures", multiplier: 7},
+            {tier: 3, type: "both", weight: 20, name: "Lapis", property: "When you get this item, choose 2 class features that recharge after a short rest. Increase the number of times you can use that feature by 2. You can change these features after a long rest.", category: "classFeatures", multiplier: 7},
+            {tier: 3, type: "both", weight: 18, name: "Diamond", property: "When you get this item, choose 2 class features that recharge after a long rest. Increase the number of times you can use that feature by 1. You can change these features after a long rest.", category: "classFeatures", multiplier: 7},
+            {tier: 4, type: "both", weight: 28, name: "Wyrm's", property: "You gain 11 spell points that are regained after a long rest. ", category: "spMax", multiplier: 10},
+            {tier: 4, type: "both", weight: 26, name: "Hydra's", property: "You gain 13 spell points that are regained after a long rest. ", category: "spMax", multiplier: 10},
+            {tier: 1, type: "weapon", weight: 12, name: "Bronze", property: "You gain a +1 to attack rolls.", category: "attackBonus", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 12, name: "Iron", property: "You gain a +1 to damage rolls.", category: "damageBonusFlat", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 13, name: "+1", property: "You gain a +1 to attack and damage rolls.", category: "weaponBonus", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 10, name: "Pewter", property: "You gain a +2 to attack rolls.", category: "attackBonus", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 10, name: "Steel", property: "You gain a +2 to damage rolls.", category: "damageBonusFlat", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 13, name: "Deadly", property: "On a d20 weapon attack roll of 20, you can add one additional weapon damage die.", category: "damageBonusConditional", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 11, name: "Vicious", property: "On a d20 weapon attack roll of 19-20, you can add one additional weapon damage die.", category: "damageBonusConditional", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 9, name: "Savage", property: "On a d20 weapon attack roll of 18-20, you can add one additional weapon damage die.", category: "damageBonusConditional", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Vitriolic", property: "This weapon additionally deals 1d6 extra Acid damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Frozen", property: "This weapon additionally deals 1d6 extra Cold damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Flaming", property: "This weapon additionally deals 1d6 extra Fire damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Forceful", property: "This weapon additionally deals 1d6 extra Force damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Shocking", property: "This weapon additionally deals 1d6 extra Lightning damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Decaying", property: "This weapon additionally deals 1d6 extra Necrotic damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Poisoned", property: "This weapon additionally deals 1d6 extra Poison damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Tormenting", property: "This weapon additionally deals 1d6 extra Psychic damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Radiant", property: "This weapon additionally deals 1d6 extra Radiant damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 7, name: "Booming", property: "This weapon additionally deals 1d6 extra Thunder damage.", category: "elementalWeaponDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 12, name: "Jagged", property: "When you deal critical damage, you can add 1d6 when determining the extra damage. ", category: "critDamage", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 9, name: "Viridian", property: "When you hit a creature with this weapon, its AC is reduced by 1, constitution save ends. This effect does not stack. ", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 9, name: "Crimson", property: "When you hit a creature with this weapon, its attack bonus is reduced by 1, constitution save ends. This effect does not stack. ", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 12, name: "Crusader's", property: "You gain 1 bonus damage for every creature adjacent to you.", category: "damageBonusConditional", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 12, name: "Berserker's", property: "You gain 1 bonus damage for every creature adjacent to the target.", category: "damageBonusConditional", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 12, name: "Exploding", property: "When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again for bonus damage. This effect can occur multiple times.", category: "damageExplode", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 14, name: "Erupting", property: "When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is fire damage. This effect can occur multiple times.", category: "damageExplode", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 14, name: "Rupturing", property: "When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is force damage. This effect can occur multiple times.", category: "damageExplode", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 14, name: "Detonating", property: "When rolling damage for attacks made with this weapon, when a die rolls maximum, you may roll that die again. The additional damage is thunder damage.  This effect can occur multiple times.", category: "damageExplode", multiplier: 2},
+            {tier: 1, type: "weapon", weight: 10, name: "Howling", property: "When you hit a creature with a melee attack, they must make a DC 14 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you.", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 2, type: "weapon", weight: 19, name: "+2", property: "You gain a +2 to attack and damage rolls.", category: "weaponBonus", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Gold", property: "You gain a +3 to attack rolls.", category: "attackBonus", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Platinum", property: "You gain a +3 to damage rolls.", category: "damageBonusFlat", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Adamantine", property: "Your critical hit range is increased by 1.", category: "critRange", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 15, name: "Ruthless", property: "On a d20 weapon attack roll of 17-20, you can add one additional weapon damage die.", category: "damageBonusConditional", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 15, name: "Merciless", property: "On a d20 weapon attack roll of 16-20, you can add one additional weapon damage die.", category: "damageBonusConditional", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Corrosive", property: "This weapon additionally deals 1d8 extra Acid damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Arctic", property: "This weapon additionally deals 1d8 extra Cold damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Ashen", property: "This weapon additionally deals 1d8 extra Fire damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Potent", property: "This weapon additionally deals 1d8 extra Force damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Electric", property: "This weapon additionally deals 1d8 extra Lightning damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Rotting", property: "This weapon additionally deals 1d8 extra Necrotic damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Venomous", property: "This weapon additionally deals 1d8 extra Poison damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Traumatic", property: "This weapon additionally deals 1d8 extra Psychic damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Luminous", property: "This weapon additionally deals 1d8 extra Radiant damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Crashing", property: "This weapon additionally deals 1d8 extra Thunder damage.", category: "elementalWeaponDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Heavy", property: "When you deal critical damage, you can add 1d10 when determining the extra damage. ", category: "critDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Brutal", property: "When you deal critical damage, you can add 2d6 when determining the extra damage. ", category: "critDamage", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Beryl", property: "When you hit a creature with this weapon, its AC is reduced by 2, constitution save ends. This effect does not stack. ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Scarlet", property: "When you hit a creature with this weapon, its attack bonus is reduced by 2, constitution save ends. This effect does not stack. ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Wailing", property: "When you hit a creature with a melee attack, they must make a DC 16 Wisdom saving throw. On a failure, the creature must use its next available action or reaction to move their speed away from you.", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 17, name: "Dreadful", property: "After hitting a creature with this weapon, the target is frightened of you until the end of its next turn.  ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 19, name: "Blighted", property: "After hitting a creature with this weapon, the target is poisoned until the end of its next turn.  ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 15, name: "Exhausting", property: "After hitting a creature with this weapon, the target is under the effect of the Slow spell  until the end of its next turn. ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, type: "weapon", weight: 15, name: "Chaotic", property: "After hitting a creature with this weapon, the target uses its action at the start of its turn to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target can act normally  ", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 3, type: "weapon", weight: 24, name: "+3", property: "You gain a +3 to attack and damage rolls.", category: "weaponBonus", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 26, name: "Mithril", property: "Your critical hit range is increased by 2.", category: "critRange", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Caustic", property: "This weapon additionally deals 1d10 extra Acid damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Glacial", property: "This weapon additionally deals 1d10 extra Cold damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Blazing", property: "This weapon additionally deals 1d10 extra Fire damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Mystic", property: "This weapon additionally deals 1d10 extra Force damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Stormy", property: "This weapon additionally deals 1d10 extra Lightning damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Deathly", property: "This weapon additionally deals 1d10 extra Necrotic damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Toxic", property: "This weapon additionally deals 1d10 extra Poison damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Harrowing", property: "This weapon additionally deals 1d10 extra Psychic damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Hallowed", property: "This weapon additionally deals 1d10 extra Radiant damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 18, name: "Roaring", property: "This weapon additionally deals 1d10 extra Thunder damage.", category: "elementalWeaponDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 23, name: "Massive", property: "When you deal critical damage, you can add 2d10 when determining the extra damage. ", category: "critDamage", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 27, name: "Templar's", property: "You gain 2 bonus damage for every creature adjacent to you.", category: "damageBonusConditional", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 27, name: "Fanatic's", property: "You gain 2 bonus damage for every creature adjacent to the target.", category: "damageBonusConditional", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 21, name: "Obscurring", property: "After hitting a creature with this weapon, the target is blinded until the end of its next turn.  ", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 22, name: "Nightmare", property: "After hitting a creature with this weapon, the target is frightened of you, save ends.  ", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 24, name: "Pestilent", property: "After hitting a creature with this weapon, the target is poisoned, save ends.  ", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 22, name: "Discordant", property: "After hitting a creature with this weapon, the target uses its action to make a melee attack against a randomly determined creature within its reach. If there is no creature within its reach, the target does nothing that turn.  ", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 3, type: "weapon", weight: 21, name: "Phasing", property: "After hitting a creature with this weapon,  the target shifts to the ethereal plane until the end of its next turn.   ", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 4, type: "weapon", weight: 33, name: "Orichalcum", property: "Your critical hit range is increased by 3.", category: "critRange", multiplier: 10},
+            {tier: 4, type: "weapon", weight: 27, name: "Crippling", property: "After hitting a creature with this weapon, the target is incapacitated until the end of its next turn.  ", category: "appliedStatusEffect", multiplier: 10},
+            {tier: 4, type: "weapon", weight: 27, name: "Blinding", property: "After hitting a creature with this weapon, the target is blinded, save ends.  ", category: "appliedStatusEffect", multiplier: 10},
+            {tier: 4, type: "weapon", weight: 27, name: "Subjugating", property: "After hitting a creature with this weapon, the target is incapacitated, save ends.  ", category: "appliedStatusEffect", multiplier: 10},
+            {tier: 4, type: "weapon", weight: 27, name: "Overwhelming", property: "After hitting a creature with this weapon, the target is under the effect of the Slow spell  save ends. ", category: "appliedStatusEffect", multiplier: 10},
+        ];
 const suffixTable = [
-{min:1, max:11, name:"of Brawn", benefit:"You gain a +1 bonus to your Strength ability score.", multiplier: 2},
-{min:12, max:22, name:"of Nimbleness", benefit:"You gain a +1 bonus to your Dexterity ability score.", multiplier: 2},
-{min:23, max:33, name:"of Stamina", benefit:"You gain a +1 bonus to your Constitution ability score.", multiplier: 2},
-{min:34, max:44, name:"of Wit", benefit:"You gain a +1 bonus to your Intelligence ability score.", multiplier: 2},
-{min:45, max:55, name:"of Reason", benefit:"You gain a +1 bonus to your Wisdom ability score.", multiplier: 2},
-{min:56, max:66, name:"of Appeal", benefit:"You gain a +1 bonus to your Charisma ability score.", multiplier: 2},
-{min:67, max:72, name:"of the Boar", benefit:"You gain a +1 bonus to your Strength saving throws.", multiplier: 2},
-{min:73, max:78, name:"of the Ram", benefit:"You gain a +1 bonus to your Dexterity saving throws.", multiplier: 2},
-{min:79, max:84, name:"of the Cat", benefit:"You gain a +1 bonus to your Constitution saving throws.", multiplier: 2},
-{min:85, max:90, name:"of the Raccoon ", benefit:"You gain a +1 bonus to your Intelligence saving throws.", multiplier: 2},
-{min:91, max:96, name:"of the Beetle", benefit:"You gain a +1 bonus to your Wisdom saving throws.", multiplier: 2},
-{min:97, max:102, name:"of the Badger", benefit:"You gain a +1 bonus to your Charisma saving throws.", multiplier: 2},
-{min:103, max:108, name:"of the Rat", benefit:"You gain a +1 bonus to your Death saving throws.", multiplier: 2},
-{min:109, max:112, name:"of the Wolf", benefit:"You gain a +2 bonus to your Charisma saving throws.", multiplier: 2},
-{min:113, max:116, name:"of the Owl", benefit:"You gain a +2 bonus to your Strength saving throws.", multiplier: 2},
-{min:117, max:120, name:"of the Tortoise", benefit:"You gain a +2 bonus to your Dexterity saving throws.", multiplier: 2},
-{min:121, max:124, name:"of the Dove", benefit:"You gain a +2 bonus to your Constitution saving throws.", multiplier: 2},
-{min:125, max:128, name:"of the Swan", benefit:"You gain a +2 bonus to your Intelligence saving throws.", multiplier: 2},
-{min:129, max:132, name:"of the Hyena", benefit:"You gain a +2 bonus to your Wisdom saving throws.", multiplier: 2},
-{min:133, max:136, name:"of the Possum", benefit:"You gain a +2 bonus to your Death saving throws.", multiplier: 2},
-{min:137, max:154, name:"of the Warrior", benefit:"You gain 1 additional Armor Point. ", multiplier: 2},
-{min:155, max:168, name:"of the Soldier", benefit:"You gain 3 additional Armor Points. ", multiplier: 2},
-{min:169, max:181, name:"of the Sparrow", benefit:"You maximum hit point value is increased by 2.  ", multiplier: 2},
-{min:182, max:192, name:"of the Kestrel", benefit:"You maximum hit point value is increased by 5.  ", multiplier: 2},
-{min:193, max:198, name:"of the Adept", benefit:"You gain 1 hit dice that is the same size as your highest level class. ", multiplier: 2},
-{min:199, max:207, name:"of Veins", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+3 hit points.", multiplier: 2},
-{min:208, max:213, name:"of the Moon", benefit:"You gain a number of extra spell points, equal to your level divided by 2, rounded down. ", multiplier: 2},
-{min:214, max:219, name:"of the Giant", benefit:"You gain a number of armor points, equal to your level divided by 2, rounded down. ", multiplier: 2},
-{min:220, max:222, name:"of Glowing", benefit:"While wearing this item, light sources you carry shed 5 feet more bright and dim light. ", multiplier: 2},
-{min:223, max:225, name:"of Gleaming", benefit:"While wearing this item, light sources you carry shed 10 feet more bright and dim light. ", multiplier: 2},
-{min:226, max:231, name:"of Brambles", benefit:"When you take damage from a melee attack, the attacker takes 1d4 piercing damage. ", multiplier: 2},
-{min:232, max:237, name:"of Rapport", benefit:"While wearing this item, any allies within 5 feet of you have a +1 bonus to saving throws.", multiplier: 2},
-{min:238, max:243, name:"of Mana Shield", benefit:"When you would take damage from any source, you can expend  up to 2 spell points and reduce the damage by  1d12 for each point spent.", multiplier: 2},
-{min:244, max:255, name:"of Strength", benefit:"You gain a +2 bonus to your Strength ability score.", multiplier: 4},
-{min:256, max:267, name:"of Dexterity", benefit:"You gain a +2 bonus to your Dexterity ability score.", multiplier: 4},
-{min:268, max:279, name:"of Constitution", benefit:"You gain a +2 bonus to your Constitution ability score.", multiplier: 4},
-{min:280, max:291, name:"of Intelligence", benefit:"You gain a +2 bonus to your Intelligence ability score.", multiplier: 4},
-{min:292, max:303, name:"of Wisdom", benefit:"You gain a +2 bonus to your Wisdom ability score.", multiplier: 4},
-{min:304, max:315, name:"of Charisma", benefit:"You gain a +2 bonus to your Charisma ability score.", multiplier: 4},
-{min:316, max:321, name:"of the Paladin", benefit:"You gain a +1 bonus to your Strength and Charisma ability scores.", multiplier: 4},
-{min:322, max:327, name:"of the Cleric", benefit:"You gain a +1 bonus to your Strength and Wisdom ability scores.", multiplier: 4},
-{min:328, max:333, name:"of the Warlock", benefit:"You gain a +1 bonus to your Dexterity and Charisma ability scores.", multiplier: 4},
-{min:334, max:339, name:"of the Rogue", benefit:"You gain a +1 bonus to your Dexterity and Intelligence ability scores.", multiplier: 4},
-{min:340, max:345, name:"of the Monk", benefit:"You gain a +1 bonus to your Dexterity and Wisdom ability scores.", multiplier: 4},
-{min:346, max:351, name:"of the Psion", benefit:"You gain a +1 bonus to your Intelligence and Wisdom ability scores.", multiplier: 4},
-{min:352, max:356, name:"of the Gorilla", benefit:"You gain a +3 bonus to your Strength saving throws.", multiplier: 4},
-{min:357, max:361, name:"of the Hawk", benefit:"You gain a +3 bonus to your Dexterity saving throws.", multiplier: 4},
-{min:362, max:366, name:"of the Ox", benefit:"You gain a +3 bonus to your Constitution saving throws.", multiplier: 4},
-{min:367, max:371, name:"of the Raven", benefit:"You gain a +3 bonus to your Intelligence saving throws.", multiplier: 4},
-{min:372, max:376, name:"of the Stag", benefit:"You gain a +3 bonus to your Wisdom saving throws.", multiplier: 4},
-{min:377, max:381, name:"of the Peacock", benefit:"You gain a +3 bonus to your Charisma saving throws.", multiplier: 4},
-{min:382, max:387, name:"of the Vulture", benefit:"You gain a +3 bonus to your Death saving throws.", multiplier: 4},
-{min:388, max:401, name:"of the Knight", benefit:"You gain 5 additional Armor Points.", multiplier: 4},
-{min:402, max:414, name:"of Falcon", benefit:"You maximum hit point value is increased by 8.", multiplier: 4},
-{min:415, max:425, name:"of Eagle", benefit:"You maximum hit point value is increased by 10.", multiplier: 4},
-{min:426, max:434, name:"of the Veteran", benefit:"You gain 2 hit dice that are the same size as your highest level class.", multiplier: 4},
-{min:435, max:444, name:"of Health", benefit:"While you are bloodied and still have hit points, you regain 1d4hit points at the start of your turn.", multiplier: 4},
-{min:445, max:453, name:"of Life", benefit:"You gain a bonus to your maximum hit point value, equal to your level.", multiplier: 4},
-{min:454, max:461, name:"of Blood", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+6 hit points.", multiplier: 4},
-{min:462, max:468, name:"of Heart", benefit:"When a potion or spell allows you to regain health, regain an additional 1d6+9 hit points.", multiplier: 4},
-{min:469, max:475, name:"of Shining", benefit:"While wearing this item, light sources you carry shed 15 feet more bright and dim light. ", multiplier: 4},
-{min:476, max:485, name:"of Thorns", benefit:"When you take damage from a melee attack, the attacker takes 2d4 piercing damage. ", multiplier: 4},
-{min:486, max:493, name:"of Unity", benefit:"While wearing this item, any allies within 5 feet of you have a +4 bonus to saving throws.", multiplier: 4},
-{min:494, max:502, name:"of Chance", benefit:"Once per loot session, you can roll a d8. On a 7 or higher, you gain one additional loot drop.  ", multiplier: 4},
-{min:503, max:506, name:"of Athletics", benefit:"You gain advantage on Athletics skill checks.  ", multiplier: 4},
-{min:507, max:510, name:"of Acrobatics", benefit:"You gain advantage on Acrobatics skill checks.  ", multiplier: 4},
-{min:511, max:514, name:"of the Theif", benefit:"You gain advantage on Sleight of Hand skill checks.  ", multiplier: 4},
-{min:515, max:518, name:"of Stealth", benefit:"You gain advantage on Stealth skill checks.  ", multiplier: 4},
-{min:519, max:522, name:"of Arcana", benefit:"You gain advantage on Arcana skill checks.  ", multiplier: 4},
-{min:523, max:526, name:"of History", benefit:"You gain advantage on History skill checks.  ", multiplier: 4},
-{min:527, max:530, name:"of Investigation", benefit:"You gain advantage on Investigation skill checks.  ", multiplier: 4},
-{min:531, max:534, name:"of Nature", benefit:"You gain advantage on Nature skill checks.  ", multiplier: 4},
-{min:535, max:538, name:"of Religion", benefit:"You gain advantage on Religion skill checks.  ", multiplier: 4},
-{min:539, max:542, name:"of Animal Handling", benefit:"You gain advantage on Animal Handling skill checks.", multiplier: 4},
-{min:543, max:546, name:"of Insight", benefit:"You gain advantage on Insight skill checks.", multiplier: 4},
-{min:547, max:550, name:"of Medicine", benefit:"You gain advantage on Medicine skill checks.", multiplier: 4},
-{min:551, max:554, name:"of Perception", benefit:"You gain advantage on Perception skill checks.", multiplier: 4},
-{min:555, max:558, name:"of Survival", benefit:"You gain advantage on Survival skill checks.", multiplier: 4},
-{min:559, max:562, name:"of Deception", benefit:"You gain advantage on Deception skill checks.", multiplier: 4},
-{min:563, max:566, name:"of Intimidation", benefit:"You gain advantage on Intimidation skill checks.", multiplier: 4},
-{min:567, max:570, name:"of Performance", benefit:"You gain advantage on Performance skill checks.", multiplier: 4},
-{min:571, max:574, name:"of Persuasion", benefit:"You gain advantage on Persuasion skill checks. ", multiplier: 4},
-{min:575, max:584, name:"of Soul Ward", benefit:"When you would take damage from any source, you can expend up to 4 spell points and reduce the damage by 1d6 for each point spent.", multiplier: 4},
-{min:585, max:594, name:"of Arcane Aegis", benefit:"When you would take damage from any source, you can expend up to 6 spell points and reduce the damage by 1d4 for each point spent.", multiplier: 4},
-{min:595, max:606, name:"of Might", benefit:"You gain a +3 bonus to your Strength ability score.", multiplier: 7},
-{min:607, max:618, name:"of Finesse", benefit:"You gain a +3 bonus to your Dexterity ability score.", multiplier: 7},
-{min:619, max:630, name:"of Mettle", benefit:"You gain a +3 bonus to your Constitution ability score.", multiplier: 7},
-{min:631, max:642, name:"of Brilliance", benefit:"You gain a +3 bonus to your Intelligence ability score.", multiplier: 7},
-{min:643, max:654, name:"of Judgement", benefit:"You gain a +3 bonus to your Wisdom ability score.", multiplier: 7},
-{min:655, max:666, name:"of Allure", benefit:"You gain a +3 bonus to your Charisma ability score.", multiplier: 7},
-{min:667, max:677, name:"of the Oathkeeper", benefit:"You gain a +2 bonus to your Strength and Charisma ability scores.", multiplier: 7},
-{min:678, max:688, name:"of the Priest", benefit:"You gain a +2 bonus to your Strength and Wisdom ability scores.", multiplier: 7},
-{min:689, max:699, name:"of the Hexblade", benefit:"You gain a +2 bonus to your Dexterity and Charisma ability scores.", multiplier: 7},
-{min:700, max:710, name:"of the Trickster", benefit:"You gain a +2 bonus to your Dexterity and Intelligence ability scores.", multiplier: 7},
-{min:711, max:721, name:"of the Ways", benefit:"You gain a +2 bonus to your Dexterity and Wisdom ability scores.", multiplier: 7},
-{min:722, max:732, name:"of the Noble", benefit:"You gain a +2 bonus to your Intelligence and Wisdom ability scores.", multiplier: 7},
-{min:733, max:742, name:"of of the Stars", benefit:"You gain a +1 bonus to all of your ability scores.", multiplier: 7},
-{min:743, max:757, name:"of the Champion", benefit:"You gain 8 additional Armor Points. ", multiplier: 7},
-{min:758, max:775, name:"of Condor", benefit:"You maximum hit point value is increased by 13.", multiplier: 7},
-{min:776, max:791, name:"of Mammoth", benefit:"You maximum hit point value is increased by 15.", multiplier: 7},
-{min:792, max:803, name:"of the Expert", benefit:"You gain 3 hit dice that are the same size as your highest level class. ", multiplier: 7},
-{min:804, max:815, name:"of Sinew", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+5 hit points.", multiplier: 7},
-{min:816, max:827, name:"of Regeneration", benefit:"While you are bloodied and still have hit points, you regain 1d8hit points at the start of your turn. ", multiplier: 7},
-{min:828, max:844, name:"of the Sun", benefit:"You gain a number of extra spell points, equal to your level. ", multiplier: 7},
-{min:845, max:859, name:"of the Titan", benefit:"You gain a number of armor points, equal to your level. ", multiplier: 7},
-{min:860, max:878, name:"of Barbs", benefit:"When you take damage from a melee attack, the attacker takes 3d4 piercing damage. ", multiplier: 7},
-{min:879, max:895, name:"of Harmony", benefit:"While wearing this item, any allies within 10 feet of you have a +2 bonus to saving throws.", multiplier: 7},
-{min:896, max:911, name:"of Wealth", benefit:"Once per loot session, you can roll a d8. On a 5 or higher, you gain one additional loot drop.", multiplier: 7},
-{min:912, max:928, name:"of Power", benefit:"You gain a +4 bonus to your Strength ability score.", multiplier: 10},
-{min:929, max:945, name:"of Precision", benefit:"You gain a +4 bonus to your Dexterity ability score.", multiplier: 10},
-{min:946, max:962, name:"of Vigor", benefit:"You gain a +4 bonus to your Constitution ability score.", multiplier: 10},
-{min:963, max:979, name:"of Wizardry", benefit:"You gain a +4 bonus to your Intelligence ability score.", multiplier: 10},
-{min:980, max:996, name:"of Justice", benefit:"You gain a +4 bonus to your Wisdom ability score.", multiplier: 10},
-{min:997, max:1013, name:"of Sorcery", benefit:"You gain a +4 bonus to your Charisma ability score.", multiplier: 10},
-{min:1014, max:1028, name:"of of the Zodiac", benefit:"You gain a +2 bonus to all of your ability scores.", multiplier: 10},
-{min:1029, max:1051, name:"of the Duke", benefit:"You gain 10 additional Armor Points. ", multiplier: 10},
-{min:1052, max:1072, name:"of the King", benefit:"You gain 12 additional Armor Points. ", multiplier: 10},
-{min:1073, max:1093, name:"of Whale", benefit:"You maximum hit point value is increased by 20.", multiplier: 10},
-{min:1094, max:1112, name:"of Colossus", benefit:"You maximum hit point value is increased by 25.", multiplier: 10},
-{min:1113, max:1136, name:"of the Master", benefit:"You gain 4 hit dice that are the same size as your highest level class. ", multiplier: 10},
-{min:1137, max:1159, name:"of Bone", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+10 hit points.", multiplier: 10},
-{min:1160, max:1181, name:"of Marrow", benefit:"When a potion or spell allows you to regain health, regain an additional 2d6+15 hit points.", multiplier: 10},
-{min:1182, max:1201, name:"of Regrowth", benefit:"While you are bloodied and still have hit points, you regain 1d12hit points at the start of your turn. ", multiplier: 10},
-{min:1202, max:1226, name:"of Vitality", benefit:"You gain a bonus to your maximum hit point value, equal to twice your level. ", multiplier: 10},
-{min:1227, max:1251, name:"of Spikes", benefit:"When you take damage from a melee attack, the attacker takes 4d4 piercing damage. ", multiplier: 10},
-{min:1252, max:1276, name:"of Kin", benefit:"While wearing this item, any allies within 20 feet of you have a +2 bonus to saving throws.", multiplier: 10},
-{min:1277, max:1301, name:"of Fortune", benefit:"Once per loot session, you can roll a d8. On a 3 or higher, you gain one additional loot drop.", multiplier: 10},
-{min:1302, max:1305, name:"of Shattering", benefit:"After you take Bludgeoning damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", multiplier: 2},
-{min:1306, max:1309, name:"of Puncturing", benefit:"After you take Piercing damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", multiplier: 2},
-{min:1310, max:1313, name:"of Rending", benefit:"After you take Slashing damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", multiplier: 2},
-{min:1314, max:1317, name:"of Acid", benefit:"After you take Acid damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Acid damage.", multiplier: 2},
-{min:1318, max:1321, name:"of Frost", benefit:"After you take Cold damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Cold damage.", multiplier: 2},
-{min:1322, max:1325, name:"of Fire", benefit:"After you take Fire damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Fire damage.", multiplier: 2},
-{min:1326, max:1329, name:"of Magic", benefit:"After you take Force damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Force damage.", multiplier: 2},
-{min:1330, max:1333, name:"of Lightning", benefit:"After you take Lightning damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Lightning damage.", multiplier: 2},
-{min:1334, max:1337, name:"of Shadow", benefit:"After you take Necrotic damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Necrotic damage.", multiplier: 2},
-{min:1338, max:1341, name:"of Sickness", benefit:"After you take Poison damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Poison damage.", multiplier: 2},
-{min:1342, max:1345, name:"of the Mind", benefit:"After you take Psychic damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Psychic damage.", multiplier: 2},
-{min:1346, max:1349, name:"of Light", benefit:"After you take Radiant damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Radiant damage.", multiplier: 2},
-{min:1350, max:1353, name:"of Thunder", benefit:"After you take Thunder damage, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Thunder damage.", multiplier: 2},
-{min:1354, max:1362, name:"of the Wyvern", benefit:"Your Proficiency Bonus increases by 1. This effect can only be applied from one item. ", multiplier: 2},
-{min:1363, max:1369, name:"of Readiness", benefit:"You can add 1d4 to initiative rolls.", multiplier: 2},
-{min:1370, max:1375, name:"of Apetite", benefit:"When you cast a spell using spell points, roll a d20. On a 13 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", multiplier: 2},
-{min:1376, max:1381, name:"of Study", benefit:"When first equipping this item, choose two 1st-level spells you have access to. These spells do not count against your total number of spells known or prepared.", multiplier: 2},
-{min:1382, max:1387, name:"of Training", benefit:"When first equipping this item, choose two 2nd-level spells you have access to. These spells do not count against your total number of spells known or prepared.", multiplier: 2},
-{min:1388, max:1396, name:"of Instinct", benefit:"This item does not have a proficiency requirement to gain its mastery bonus.", multiplier: 4},
-{min:1397, max:1405, name:"of Ease", benefit:"This item does not have a strength requirement to gain its mastery bonus.", multiplier: 4},
-{min:1406, max:1414, name:"of Simplicity", benefit:"This item does not have a dexterity requirement to gain its mastery bonus.", multiplier: 4},
-{min:1415, max:1422, name:"of the Drake", benefit:"Your Proficiency Bonus increases by 2. This effect can only be applied from one item.", multiplier: 4},
-{min:1423, max:1432, name:"of the Leech", benefit:"When you deal damage with a weapon attack, you regain 1d4 hit points.", multiplier: 4},
-{min:1433, max:1440, name:"of the Bat", benefit:"When you deal damage with a weapon attack, you regain 1d8 hit points.", multiplier: 4},
-{min:1441, max:1450, name:"of the Claw", benefit:"When you deal damage with a weapon attack, you regain 1 spell points.", multiplier: 4},
-{min:1451, max:1458, name:"of the Fang", benefit:"When you deal damage with a weapon attack, you regain 2 spell points.", multiplier: 4},
-{min:1459, max:1469, name:"of the Apprentice", benefit:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead.", multiplier: 4},
-{min:1470, max:1478, name:"of Alacrity", benefit:"You can add 1d8 to initiative rolls.", multiplier: 4},
-{min:1479, max:1487, name:"of Vengeance", benefit:"On your turn, you can use your move action to instead make a weapon attack.", multiplier: 4},
-{min:1488, max:1496, name:"of Quickness", benefit:"On your turn, you can use your move action to instead cast a cantrip.", multiplier: 4},
-{min:1497, max:1505, name:"of Hunger", benefit:"When you cast a spell using spell points, roll a d20. On a 9 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", multiplier: 4},
-{min:1506, max:1514, name:"of Mnemonics", benefit:"If you have the spellcasting class feature, you can add your proficiency bonus to the number of spells you know or can prepare.", multiplier: 4},
-{min:1515, max:1523, name:"of Research", benefit:"When first equipping this item, choose two 3rd-level spells you have access to. These spells do not count against your total number of spells known or prepared. ", multiplier: 4},
-{min:1524, max:1532, name:"of Lore", benefit:"When first equipping this item, choose one 4th-level spell you have access to. This spells do not count against your total number of spells known or prepared. ", multiplier: 4},
-{min:1533, max:1544, name:"of the Dragon", benefit:"Your Proficiency Bonus increases by 3. This effect can only be applied from one item. ", multiplier: 7},
-{min:1545, max:1556, name:"of the Vampire", benefit:"When you deal damage with a weapon attack, you regain 1d12 hit points. ", multiplier: 7},
-{min:1557, max:1568, name:"of the Talon", benefit:"When you deal damage with a weapon attack, you regain 3 spell points. ", multiplier: 7},
-{min:1569, max:1580, name:"of the Magus", benefit:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead. When you use this feature, roll a d6. On a 6, this feature regains its use.", multiplier: 7},
-{min:1581, max:1592, name:"of Initiative", benefit:"You can add 1d12 to initiative rolls.", multiplier: 7},
-{min:1593, max:1604, name:"of Zeal", benefit:"On your turn, you can use your move action to instead take the attack action.", multiplier: 7},
-{min:1605, max:1616, name:"of Haste", benefit:"On your turn, you can use your move action to instead cast a spell. ", multiplier: 7},
-{min:1617, max:1628, name:"of Craving", benefit:"When you cast a spell using spell points, roll a d20. On a 5 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", multiplier: 7},
-{min:1629, max:1640, name:"of Enlightenment", benefit:"When first equipping this item, choose one 5th-level spell you have access to. This spells do not count against your total number of spells known or prepared. ", multiplier: 7},
-{min:1641, max:1652, name:"of the Leopard", benefit:"You gain a damage bonus to your weapon attacks equal to your level divided by 3, rounded down. ", multiplier: 2},
-{min:1653, max:1664, name:"of the Lion", benefit:"You gain a damage bonus to your spells equal to your level divided by 3, rounded down. ", multiplier: 2},
-{min:1665, max:1676, name:"of Measure", benefit:"When you roll damage for a weapon attack, you can reroll any 1's on the damage dice. You must use the second result. ", multiplier: 2},
-{min:1677, max:1688, name:"of Tempo", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than your level, you may make one additional attack. ", multiplier: 2},
-{min:1689, max:1700, name:"of Suppression", benefit:"When you hit a creature with this weapon, its speed is reduced by 10 feet until the start of your next turn.", multiplier: 2},
-{min:1701, max:1712, name:"of the Bear", benefit:"When you hit a creature with a melee attack, they must make a DC 15 Strength saving throw. On a failure, the creature is pushed 5 feet.", multiplier: 2},
-{min:1713, max:1724, name:"of Fatigue", benefit:"After hitting a creature with this weapon, they cannot make any reactions until the end of the turn.", multiplier: 2},
-{min:1725, max:1736, name:"of Binding", benefit:"After hitting a creature with this weapon, they cannot make any reactions until the end of their next turn.", multiplier: 2},
-{min:1737, max:1754, name:"of the Panther", benefit:"You gain a damage bonus to your weapon attacks equal to your level divided by 2, rounded down. ", multiplier: 4},
-{min:1755, max:1772, name:"of the Tiger", benefit:"You gain a damage bonus to your spells equal to your level divided by 2, rounded down. ", multiplier: 4},
-{min:1773, max:1790, name:"of Worth", benefit:"When you roll damage for a weapon attack, you can reroll any 2's on the damage dice. You must use the second result. ", multiplier: 4},
-{min:1791, max:1808, name:"of Excellence", benefit:"When you deal damage with a spell, you can reroll any 1's on the damage dice. You must use the second result. ", multiplier: 4},
-{min:1809, max:1826, name:"of Momentum", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 5 plus your level, you may make one additional attack. ", multiplier: 4},
-{min:1827, max:1844, name:"of Impairment", benefit:"When you hit a creature with this weapon, its speed is reduced by half until the start of your next turn.", multiplier: 4},
-{min:1845, max:1862, name:"of the Grizzly", benefit:"When you hit a creature with a melee attack, they must make a DC 17 Strength saving throw. On a failure, the creature is pushed 10 feet.", multiplier: 4},
-{min:1863, max:1880, name:"of Greed", benefit:"When damage is rolled after hitting with this weapon, roll a d8. On an 8, maximize all damage dice. On 3-7, damage is calculated as usual. On a 1 or 2, the attack deals 0 damage.", multiplier: 4},
-{min:1881, max:1904, name:"of Supremacy", benefit:"When you deal damage with a spell, you can reroll any 2's on the damage dice. You must use the second result. ", multiplier: 7},
-{min:1905, max:1928, name:"of Velocity", benefit:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 10 plus your level, you may make one additional attack. ", multiplier: 7},
-{min:1929, max:1952, name:"of Containment", benefit:"When you hit a creature with this weapon, its speed is reduced to 0 until the start of your next turn.", multiplier: 7},
-{min:1953, max:1976, name:"of Avarice", benefit:"When damage is rolled after hitting with this weapon, roll a d4. On a 4, maximize all damage dice. On 2-3, damage is calculated as usual. On a 1, the attack deals 0 damage.", multiplier: 7},
-{min:1977, max:2000, name:"of Maiming", benefit:"After hitting a creature with this weapon, they cannot make any reactions for 1d4 turns.", multiplier: 7},
-    ];
-const prefixCurseTable = [
-{min:1, max:7, name:"Rusted", benefit:"You suffer a -1 to your AC.", multiplier: 0.5},
-{min:8, max:13, name:"Crystaline", benefit:"While using this item, your armor points are reduced by 5 to a minimum of 1.", multiplier: 0.5},
-{min:14, max:19, name:"Glass", benefit:"While using this item, your armor points are reduced by half.", multiplier: 0.5},
-{min:20, max:24, name:"Pitch", benefit:"While using this item, your light sources have bright and dim light reduced by 10 feet.", multiplier: 0.5},
-{min:25, max:31, name:"Tar", benefit:"While using this item, you no longer gain the benefits of darkvision, if you have it.", multiplier: 0.5},
-{min:32, max:41, name:"Vulnerable", benefit:"You suffer a -2 to your AC.", multiplier: 0.25},
-{min:42, max:55, name:"Brittle", benefit:"You suffer a -3 to your AC.", multiplier: 0.15},
-{min:56, max:65, name:"Frog's", benefit:"While using this item, your spell points are reduced by 15 to a minimum of 1.", multiplier: 0.25},
-{min:66, max:75, name:"Toad's", benefit:"While using this item, your spell points are reduced by half.", multiplier: 0.25},
-{min:76, max:83, name:"Tin", benefit:"You suffer a -1 to your weapon attack rolls.", multiplier: 0.5},
-{min:84, max:88, name:"Aluminum", benefit:"You suffer a -2 to your weapon attack rolls.", multiplier: 0.5},
-{min:89, max:95, name:"Bent", benefit:"When rolling damage for an attack made with this weapon, any dice with a result higher than 3 are instead treated as a 3.", multiplier: 0.5},
-{min:96, max:100, name:"Dull", benefit:"When rolling damage for an attack made with this weapon, any dice with a result higher than 2 are instead treated as a 2.", multiplier: 0.5},
-{min:101, max:110, name:"Copper", benefit:"You suffer a -3 to your weapon attack rolls.", multiplier: 0.25},
-{min:111, max:120, name:"Useless", benefit:"When rolling damage for an attack made with this weapon, all dice are treated as a 1.", multiplier: 0.25},
-	];
-const suffixCurseTable = [
-{min:1, max:7, name:"of Tears", benefit:"After you hit with a melee attack, you take 1 piercing damage.", multiplier: 0.5},
-{min:8, max:12, name:"of Pain", benefit:"After you hit with a melee attack, you take 2 piercing damage.", multiplier: 0.5},
-{min:13, max:18, name:"of Weakness", benefit:"While using this item, you suffer a -1 to your Strength score.", multiplier: 0.5},
-{min:19, max:24, name:"of Frailty", benefit:"While using this item, you suffer a -1 to your Constitution score.", multiplier: 0.5},
-{min:25, max:30, name:"of Bumbling", benefit:"While using this item, you suffer a -1 to your Dexterity score.", multiplier: 0.5},
-{min:31, max:36, name:"of Dyslexia", benefit:"While using this item, you suffer a -1 to your Intelligence score.", multiplier: 0.5},
-{min:37, max:42, name:"of the Nitwit", benefit:"While using this item, you suffer a -1 to your Wisdom score.", multiplier: 0.5},
-{min:43, max:48, name:"of Aversion", benefit:"While using this item, you suffer a -1 to your Charisma score.", multiplier: 0.5},
-{min:49, max:54, name:"of the Snail", benefit:"While using this item, your speed is halved.", multiplier: 0.5},
-{min:55, max:64, name:"of Atrophy", benefit:"While using this item, you suffer a -2 to your Strength score.", multiplier: 0.25},
-{min:65, max:74, name:"of Disease", benefit:"While using this item, you suffer a -2 to your Constitution score.", multiplier: 0.25},
-{min:75, max:84, name:"of Lumbering", benefit:"While using this item, you suffer a -2 to your Dexterity score.", multiplier: 0.25},
-{min:85, max:94, name:"of the Oaf", benefit:"While using this item, you suffer a -2 to your Intelligence score.", multiplier: 0.25},
-{min:95, max:104, name:"of the Gullable", benefit:"While using this item, you suffer a -2 to your Wisdom score.", multiplier: 0.25},
-{min:105, max:114, name:"of Loathing", benefit:"While using this item, you suffer a -2 to your Charisma score.", multiplier: 0.25},
-{min:115, max:122, name:"of Trouble", benefit:"While using this item, you suffer a -1 to all ability scores.", multiplier: 0.25},
-{min:123, max:136, name:"of Tribulation", benefit:"While using this item, you suffer a -2 to all ability scores.", multiplier: 0.15},
-{min:137, max:143, name:"of Corruption", benefit:"While in posession of this item, your maximum spell points cannot be more than twice your level.", multiplier: 0.5},
-{min:144, max:149, name:"of the Fool", benefit:"While in posession of this item, you can only prepare or know 1 spell.", multiplier: 0.5},
-{min:150, max:159, name:"of Ruin", benefit:"While using this item, you have disadvantage on all saving throws.", multiplier: 0.25},
-{min:160, max:168, name:"of Pox", benefit:"While in posession of this item, you cannot regain hit points from spells, features, or items.", multiplier: 0.25},
-{min:169, max:180, name:"of Peril", benefit:"While using this item, attacks against you are made at advantage.", multiplier: 0.25},
-{min:181, max:190, name:"of Sloth", benefit:"While using this item, you can make only one attack roll per round, regardless of any additional features or effects.", multiplier: 0.25},
-{min:191, max:200, name:"of Passivity", benefit:"While using this item, you cannot make any opportunity attacks.", multiplier: 0.25},
-	];
+            {tier: 1, weight: 11, type: "armor", name: "of Brawn", property:"You gain a +1 bonus to your Strength ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of Nimbleness", property:"You gain a +1 bonus to your Dexterity ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of Stamina", property:"You gain a +1 bonus to your Constitution ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of Wit", property:"You gain a +1 bonus to your Intelligence ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of Reason", property:"You gain a +1 bonus to your Wisdom ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of Appeal", property:"You gain a +1 bonus to your Charisma ability score.", category: "abilityScore", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Boar", property:"You gain a +1 bonus to your Strength saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Ram", property:"You gain a +1 bonus to your Dexterity saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Cat", property:"You gain a +1 bonus to your Constitution saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Raccoon ", property:"You gain a +1 bonus to your Intelligence saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Beetle", property:"You gain a +1 bonus to your Wisdom saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Badger", property:"You gain a +1 bonus to your Charisma saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Rat", property:"You gain a +1 bonus to your Death saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Wolf", property:"You gain a +2 bonus to your Charisma saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Owl", property:"You gain a +2 bonus to your Strength saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Tortoise", property:"You gain a +2 bonus to your Dexterity saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Dove", property:"You gain a +2 bonus to your Constitution saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Swan", property:"You gain a +2 bonus to your Intelligence saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Hyena", property:"You gain a +2 bonus to your Wisdom saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 4, type: "armor", name: "of the Possum", property:"You gain a +2 bonus to your Death saving throws.", category: "savingThrow", multiplier: 2},
+            {tier: 1, weight: 18, type: "armor", name: "of the Warrior", property:"You gain 1 additional Armor Point. ", category: "apMax", multiplier: 2},
+            {tier: 1, weight: 14, type: "armor", name: "of the Soldier", property:"You gain 3 additional Armor Points. ", category: "apMax", multiplier: 2},
+            {tier: 1, weight: 13, type: "armor", name: "of the Sparrow", property:"You maximum hit point value is increased by 2.  ", category: "hpMax", multiplier: 2},
+            {tier: 1, weight: 11, type: "armor", name: "of the Kestrel", property:"You maximum hit point value is increased by 5.  ", category: "hpMax", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Adept", property:"You gain 1 hit dice that is the same size as your highest level class. ", category: "hitDice", multiplier: 2},
+            {tier: 1, weight: 9, type: "armor", name: "of Veins", property:"When a potion or spell allows you to regain health, regain an additional 1d6+3 hit points.", category: "hpHealing", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Moon", property:"You gain a number of extra spell points, equal to your level divided by 2, rounded down. ", category: "spMax", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of the Giant", property:"You gain a number of armor points, equal to your level divided by 2, rounded down. ", category: "apMax", multiplier: 2},
+            {tier: 1, weight: 3, type: "armor", name: "of Glowing", property:"While wearing this item, light sources you carry shed 5 feet more bright and dim light. ", category: "lightLevel", multiplier: 2},
+            {tier: 1, weight: 3, type: "armor", name: "of Gleaming", property:"While wearing this item, light sources you carry shed 10 feet more bright and dim light. ", category: "lightLevel", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of Brambles", property:"When you take damage from a melee attack, the attacker takes 1d4 piercing damage. ", category: "thorns", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of Rapport", property:"While wearing this item, any allies within 5 feet of you have a +1 bonus to saving throws.", category: "savingThrowConditional", multiplier: 2},
+            {tier: 1, weight: 6, type: "armor", name: "of Mana Shield", property:"When you would take damage from any source, you can expend  up to 2 spell points and reduce the damage by  1d12 for each point spent.", category: "spDefense", multiplier: 2},
+            {tier: 2, weight: 12, type: "armor", name: "of Strength", property:"You gain a +2 bonus to your Strength ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 12, type: "armor", name: "of Dexterity", property:"You gain a +2 bonus to your Dexterity ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 12, type: "armor", name: "of Constitution", property:"You gain a +2 bonus to your Constitution ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 12, type: "armor", name: "of Intelligence", property:"You gain a +2 bonus to your Intelligence ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 12, type: "armor", name: "of Wisdom", property:"You gain a +2 bonus to your Wisdom ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 12, type: "armor", name: "of Charisma", property:"You gain a +2 bonus to your Charisma ability score.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Paladin", property:"You gain a +1 bonus to your Strength and Charisma ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Cleric", property:"You gain a +1 bonus to your Strength and Wisdom ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Warlock", property:"You gain a +1 bonus to your Dexterity and Charisma ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Rogue", property:"You gain a +1 bonus to your Dexterity and Intelligence ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Monk", property:"You gain a +1 bonus to your Dexterity and Wisdom ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Psion", property:"You gain a +1 bonus to your Intelligence and Wisdom ability scores.", category: "abilityScore", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Gorilla", property:"You gain a +3 bonus to your Strength saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Hawk", property:"You gain a +3 bonus to your Dexterity saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Ox", property:"You gain a +3 bonus to your Constitution saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Raven", property:"You gain a +3 bonus to your Intelligence saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Stag", property:"You gain a +3 bonus to your Wisdom saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 5, type: "armor", name: "of the Peacock", property:"You gain a +3 bonus to your Charisma saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 6, type: "armor", name: "of the Vulture", property:"You gain a +3 bonus to your Death saving throws.", category: "savingThrow", multiplier: 4},
+            {tier: 2, weight: 14, type: "armor", name: "of the Knight", property:"You gain 5 additional Armor Points.", category: "apMax", multiplier: 4},
+            {tier: 2, weight: 13, type: "armor", name: "of Falcon", property:"You maximum hit point value is increased by 8.", category: "hpMax", multiplier: 4},
+            {tier: 2, weight: 11, type: "armor", name: "of Eagle", property:"You maximum hit point value is increased by 10.", category: "hpMax", multiplier: 4},
+            {tier: 2, weight: 9, type: "armor", name: "of the Veteran", property:"You gain 2 hit dice that are the same size as your highest level class.", category: "hitDice", multiplier: 4},
+            {tier: 2, weight: 10, type: "armor", name: "of Health", property:"While you are bloodied and still have hit points, you regain 1d4hit points at the start of your turn.", category: "hpRegen", multiplier: 4},
+            {tier: 2, weight: 9, type: "armor", name: "of Life", property:"You gain a bonus to your maximum hit point value, equal to your level.", category: "hpMax", multiplier: 4},
+            {tier: 2, weight: 8, type: "armor", name: "of Blood", property:"When a potion or spell allows you to regain health, regain an additional 1d6+6 hit points.", category: "hpHealing", multiplier: 4},
+            {tier: 2, weight: 7, type: "armor", name: "of Heart", property:"When a potion or spell allows you to regain health, regain an additional 1d6+9 hit points.", category: "hpHealing", multiplier: 4},
+            {tier: 2, weight: 7, type: "armor", name: "of Shining", property:"While wearing this item, light sources you carry shed 15 feet more bright and dim light. ", category: "lightLevel", multiplier: 4},
+            {tier: 2, weight: 10, type: "armor", name: "of Thorns", property:"When you take damage from a melee attack, the attacker takes 2d4 piercing damage. ", category: "thorns", multiplier: 4},
+            {tier: 2, weight: 8, type: "armor", name: "of Unity", property:"While wearing this item, any allies within 5 feet of you have a +4 bonus to saving throws.", category: "savingThrowConditional", multiplier: 4},
+            {tier: 2, weight: 9, type: "armor", name: "of Chance", property:"Once per loot session, you can roll a d8. On a 7 or higher, you gain one additional loot drop.  ", category: "lootDrop", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Athletics", property:"You gain advantage on Athletics skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Acrobatics", property:"You gain advantage on Acrobatics skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of the Theif", property:"You gain advantage on Sleight of Hand skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Stealth", property:"You gain advantage on Stealth skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Arcana", property:"You gain advantage on Arcana skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of History", property:"You gain advantage on History skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Investigation", property:"You gain advantage on Investigation skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Nature", property:"You gain advantage on Nature skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Religion", property:"You gain advantage on Religion skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Animal Handling", property:"You gain advantage on Animal Handling skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Insight", property:"You gain advantage on Insight skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Medicine", property:"You gain advantage on Medicine skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Perception", property:"You gain advantage on Perception skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Survival", property:"You gain advantage on Survival skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Deception", property:"You gain advantage on Deception skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Intimidation", property:"You gain advantage on Intimidation skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Performance", property:"You gain advantage on Performance skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 4, type: "armor", name: "of Persuasion", property:"You gain advantage on Persuasion skill checks.  ", category: "skillCheck", multiplier: 4},
+            {tier: 2, weight: 10, type: "armor", name: "of Soul Ward", property:"When you would take damage from any source, you can expend  up to 4 spell points and reduce the damage by  1d6 for each point spent.", category: "spDefense", multiplier: 4},
+            {tier: 2, weight: 10, type: "armor", name: "of Arcane Aegis", property:"When you would take damage from any source, you can expend  up to 6 spell points and reduce the damage by  1d4 for each point spent.", category: "spDefense", multiplier: 4},
+            {tier: 3, weight: 12, type: "armor", name: "of Might", property:"You gain a +3 bonus to your Strength ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Finesse", property:"You gain a +3 bonus to your Dexterity ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Mettle", property:"You gain a +3 bonus to your Constitution ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Brilliance", property:"You gain a +3 bonus to your Intelligence ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Judgement", property:"You gain a +3 bonus to your Wisdom ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Allure", property:"You gain a +3 bonus to your Charisma ability score.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Oathkeeper", property:"You gain a +2 bonus to your Strength and Charisma ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Priest", property:"You gain a +2 bonus to your Strength and Wisdom ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Hexblade", property:"You gain a +2 bonus to your Dexterity and Charisma ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Trickster", property:"You gain a +2 bonus to your Dexterity and Intelligence ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Ways", property:"You gain a +2 bonus to your Dexterity and Wisdom ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 11, type: "armor", name: "of the Noble", property:"You gain a +2 bonus to your Intelligence and Wisdom ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 10, type: "armor", name: "of of the Stars", property:"You gain a +1 bonus to all of your ability scores.", category: "abilityScore", multiplier: 7},
+            {tier: 3, weight: 15, type: "armor", name: "of the Champion", property:"You gain 8 additional Armor Points. ", category: "apMax", multiplier: 7},
+            {tier: 3, weight: 18, type: "armor", name: "of Condor", property:"You maximum hit point value is increased by 13.  ", category: "hpMax", multiplier: 7},
+            {tier: 3, weight: 16, type: "armor", name: "of Mammoth", property:"You maximum hit point value is increased by 15.  ", category: "hpMax", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of the Expert", property:"You gain 3 hit dice that are the same size as your highest level class. ", category: "hitDice", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Sinew", property:"When a potion or spell allows you to regain health, regain an additional 2d6+5 hit points.", category: "hpHealing", multiplier: 7},
+            {tier: 3, weight: 12, type: "armor", name: "of Regeneration", property:"While you are bloodied and still have hit points, you regain 1d8hit points at the start of your turn. ", category: "hpRegen", multiplier: 7},
+            {tier: 3, weight: 17, type: "armor", name: "of the Sun", property:"You gain a number of extra spell points, equal to your level. ", category: "spMax", multiplier: 7},
+            {tier: 3, weight: 15, type: "armor", name: "of the Titan", property:"You gain a number of armor points, equal to your level. ", category: "apMax", multiplier: 7},
+            {tier: 3, weight: 19, type: "armor", name: "of Barbs", property:"When you take damage from a melee attack, the attacker takes 3d4 piercing damage. ", category: "thorns", multiplier: 7},
+            {tier: 3, weight: 17, type: "armor", name: "of Harmony", property:"While wearing this item, any allies within 10 feet of you have a +2 bonus to saving throws.", category: "savingThrowConditional", multiplier: 7},
+            {tier: 3, weight: 16, type: "armor", name: "of Wealth", property:"Once per loot session, you can roll a d8. On a 5 or higher, you gain one additional loot drop.  ", category: "lootDrop", multiplier: 7},
+            {tier: 4, weight: 17, type: "armor", name: "of Power", property:"You gain a +4 bonus to your Strength ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 17, type: "armor", name: "of Precision", property:"You gain a +4 bonus to your Dexterity ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 17, type: "armor", name: "of Vigor", property:"You gain a +4 bonus to your Constitution ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 17, type: "armor", name: "of Wizardry", property:"You gain a +4 bonus to your Intelligence ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 17, type: "armor", name: "of Justice", property:"You gain a +4 bonus to your Wisdom ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 17, type: "armor", name: "of Sorcery", property:"You gain a +4 bonus to your Charisma ability score.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 15, type: "armor", name: "of of the Zodiac", property:"You gain a +2 bonus to all of your ability scores.", category: "abilityScore", multiplier: 10},
+            {tier: 4, weight: 23, type: "armor", name: "of the Duke", property:"You gain 10 additional Armor Points. ", category: "apMax", multiplier: 10},
+            {tier: 4, weight: 21, type: "armor", name: "of the King", property:"You gain 12 additional Armor Points. ", category: "apMax", multiplier: 10},
+            {tier: 4, weight: 21, type: "armor", name: "of Whale", property:"You maximum hit point value is increased by 20.  ", category: "hpMax", multiplier: 10},
+            {tier: 4, weight: 19, type: "armor", name: "of Colossus", property:"You maximum hit point value is increased by 25.  ", category: "hpMax", multiplier: 10},
+            {tier: 4, weight: 24, type: "armor", name: "of the Master", property:"You gain 4 hit dice that are the same size as your highest level class. ", category: "hitDice", multiplier: 10},
+            {tier: 4, weight: 23, type: "armor", name: "of Bone", property:"When a potion or spell allows you to regain health, regain an additional 2d6+10 hit points.", category: "hpHealing", multiplier: 10},
+            {tier: 4, weight: 22, type: "armor", name: "of Marrow", property:"When a potion or spell allows you to regain health, regain an additional 2d6+15 hit points.", category: "hpHealing", multiplier: 10},
+            {tier: 4, weight: 20, type: "armor", name: "of Regrowth", property:"While you are bloodied and still have hit points, you regain 1d12hit points at the start of your turn. ", category: "hpRegen", multiplier: 10},
+            {tier: 4, weight: 25, type: "armor", name: "of Vitality", property:"You gain a bonus to your maximum hit point value, equal to twice your level. ", category: "hpMax", multiplier: 10},
+            {tier: 4, weight: 25, type: "armor", name: "of Spikes", property:"When you take damage from a melee attack, the attacker takes 4d4 piercing damage. ", category: "thorns", multiplier: 10},
+            {tier: 4, weight: 25, type: "armor", name: "of Kin", property:"While wearing this item, any allies within 20 feet of you have a +2 bonus to saving throws.", category: "savingThrowConditional", multiplier: 10},
+            {tier: 4, weight: 25, type: "armor", name: "of Fortune", property:"Once per loot session, you can roll a d8. On a 3 or higher, you gain one additional loot drop.  ", category: "lootDrop", multiplier: 10},
+            {tier: 1, weight: 4, type: "both", name: "of Shattering", property:"After you take Physical damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Puncturing", property:"After you take Physical damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Rending", property:"After you take Physical damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 weapon damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Acid", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Acid damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Frost", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Cold damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Fire", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Fire damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Magic", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Force damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Lightning", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Lightning damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Shadow", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Necrotic damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Sickness", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Poison damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of the Mind", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Psychic damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Light", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Radiant damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 4, type: "both", name: "of Thunder", property:"After you take Elemental damage from an attack or ability, the first time you hit with a weapon attack on your next turn, the target takes an extra 1d6 Thunder damage.", category: "elementalWeaponDamageConditional", multiplier: 2},
+            {tier: 1, weight: 9, type: "both", name: "of the Wyvern", property:"Your Proficiency Bonus increases by 1. This effect can only be applied from one item. ", category: "proficiencyBonus", multiplier: 2},
+            {tier: 1, weight: 7, type: "both", name: "of Readiness", property:"You can add 1d4 to initiative rolls.  ", category: "initiative", multiplier: 2},
+            {tier: 1, weight: 6, type: "both", name: "of Apetite", property:"When you cast a spell using spell points, roll a d20. On a 13 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", category: "spCost", multiplier: 2},
+            {tier: 1, weight: 6, type: "both", name: "of Study", property:"When first equipping this item, choose two 1st-level spells you have access to. These spells do not count against your total number of spells known or prepared. ", category: "spellPrep", multiplier: 2},
+            {tier: 1, weight: 6, type: "both", name: "of Training", property:"When first equipping this item, choose two 2nd-level spells you have access to. These spells do not count against your total number of spells known or prepared. ", category: "spellPrep", multiplier: 2},
+            {tier: 2, weight: 9, type: "both", name: "of Instinct", property:"This item does not have a proficiency requirement to gain its prowess bonus.", category: "itemRequirements", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Ease", property:"This item does not have a strength requirement to gain its prowess bonus.", category: "itemRequirements", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Simplicity", property:"This item does not have a dexterity requirement to gain its prowess bonus.", category: "itemRequirements", multiplier: 4},
+            {tier: 2, weight: 8, type: "both", name: "of the Drake", property:"Your Proficiency Bonus increases by 2. This effect can only be applied from one item. ", category: "proficiencyBonus", multiplier: 4},
+            {tier: 2, weight: 10, type: "both", name: "of the Leech", property:"When you deal damage with a weapon attack, you regain 1d4 hit points. ", category: "hpLeech", multiplier: 4},
+            {tier: 2, weight: 8, type: "both", name: "of the Bat", property:"When you deal damage with a weapon attack, you regain 1d8 hit points. ", category: "hpLeech", multiplier: 4},
+            {tier: 2, weight: 10, type: "both", name: "of the Claw", property:"When you deal damage with a weapon attack, you regain 1 spell points. ", category: "spRegen", multiplier: 4},
+            {tier: 2, weight: 8, type: "both", name: "of the Fang", property:"When you deal damage with a weapon attack, you regain 2 spell points. ", category: "spRegen", multiplier: 4},
+            {tier: 2, weight: 11, type: "both", name: "of the Apprentice", property:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead.    ", category: "spellSpeed", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Alacrity", property:"You can add 1d8 to initiative rolls.  ", category: "initiative", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Vengeance", property:"On your turn, you can use your move action to instead make a weapon attack.   ", category: "attackSpeed", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Quickness", property:"On your turn, you can use your move action to instead cast a cantrip.   ", category: "spellSpeed", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Hunger", property:"When you cast a spell using spell points, roll a d20. On a 9 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", category: "spCost", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Mnemonics", property:"If you have the spellcasting class feature, you can add your proficiency bonus to the number of spells you know or can prepare.   ", category: "spellPrep", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Research", property:"When first equipping this item, choose two 3rd-level spells you have access to. These spells do not count against your total number of spells known or prepared. ", category: "spellPrep", multiplier: 4},
+            {tier: 2, weight: 9, type: "both", name: "of Lore", property:"When first equipping this item, choose one 4th-level spell you have access to. This spells do not count against your total number of spells known or prepared. ", category: "spellPrep", multiplier: 4},
+            {tier: 3, weight: 12, type: "both", name: "of the Dragon", property:"Your Proficiency Bonus increases by 3. This effect can only be applied from one item. ", category: "proficiencyBonus", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of the Vampire", property:"When you deal damage with a weapon attack, you regain 1d12 hit points. ", category: "hpLeech", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of the Talon", property:"When you deal damage with a weapon attack, you regain 3 spell points. ", category: "spRegen", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of the Magus", property:"Once per short rest, you can cast a spell with a casting time of one action as a bonus action instead. When you use this feature, roll a d6. On a 6, this feature regains its use.   ", category: "spellSpeed", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of Initiative", property:"You can add 1d12 to initiative rolls.  ", category: "initiative", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of Zeal", property:"On your turn, you can use your move action to instead take the attack action.   ", category: "attackSpeed", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of Haste", property:"On your turn, you can use your move action to instead cast a spell.   ", category: "spellSpeed", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of Craving", property:"When you cast a spell using spell points, roll a d20. On a 5 or higher, the spell costs 1 less SP. Otherwise, it costs 1 more. ", category: "spCost", multiplier: 7},
+            {tier: 3, weight: 12, type: "both", name: "of Enlightenment", property:"When first equipping this item, choose one 5th-level spell you have access to. This spells do not count against your total number of spells known or prepared. ", category: "spellPrep", multiplier: 7},
+            {tier: 1, weight: 12, type: "weapon", name: "of the Leopard", property:"You gain a damage bonus to your weapon attacks equal to your level divided by 3, rounded down. ", category: "damageBonusFlat", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of the Lion", property:"You gain a damage bonus to your spells equal to your level divided by 3, rounded down. ", category: "spellDamageFlat", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of Measure", property:"When you roll damage for a weapon attack, you can reroll any 1's on the damage dice. You must use the second result. ", category: "weaponReroll", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of Tempo", property:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than your level, you may make one additional attack. ", category: "attackSpeed", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of Suppression", property:"When you hit a creature with this weapon, its speed is reduced by 10 feet until the start of your next turn.", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of the Bear", property:"When you hit a creature with a melee attack, they must make a DC 15 Strength saving throw. On a failure, the creature is pushed 5 feet.", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of Fatigue", property:"After hitting a creature with this weapon, they cannot make any reactions until the end of the turn.  ", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 1, weight: 12, type: "weapon", name: "of Binding", property:"After hitting a creature with this weapon, they cannot make any reactions until the end of their next turn.  ", category: "appliedStatusEffect", multiplier: 2},
+            {tier: 2, weight: 18, type: "weapon", name: "of the Panther", property:"You gain a damage bonus to your weapon attacks equal to your level divided by 2, rounded down. ", category: "damageBonusFlat", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of the Tiger", property:"You gain a damage bonus to your spells equal to your level divided by 2, rounded down. ", category: "damageBonusFlat", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of Worth", property:"When you roll damage for a weapon attack, you can reroll any 2's on the damage dice. You must use the second result. ", category: "weaponReroll", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of Excellence", property:"When you deal damage with a spell, you can reroll any 1's on the damage dice. You must use the second result. ", category: "spellReroll", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of Momentum", property:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 5 plus your level, you may make one additional attack. ", category: "attackSpeed", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of Impairment", property:"When you hit a creature with this weapon, its speed is reduced by half until the start of your next turn.", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of the Grizzly", property:"When you hit a creature with a melee attack, they must make a DC 17 Strength saving throw. On a failure, the creature is pushed 10 feet.", category: "appliedStatusEffect", multiplier: 4},
+            {tier: 2, weight: 18, type: "weapon", name: "of Greed", property:"When damage is rolled after hitting with this weapon, roll a d8. On an 8, maximize all damage dice. On 3-7, damage is calculated as usual. On a 1 or 2, the attack deals 0 damage.", category: "damageBonusConditional", multiplier: 4},
+            {tier: 3, weight: 24, type: "weapon", name: "of Supremacy", property:"When you deal damage with a spell, you can reroll any 2's on the damage dice. You must use the second result. ", category: "spellReroll", multiplier: 7},
+            {tier: 3, weight: 24, type: "weapon", name: "of Velocity", property:"Once per turn when you take the attack action, you may role percentile dice. if the result is less than 10 plus your level, you may make one additional attack. ", category: "attackSpeed", multiplier: 7},
+            {tier: 3, weight: 24, type: "weapon", name: "of Containment", property:"When you hit a creature with this weapon, its speed is reduced to 0 until the start of your next turn.", category: "appliedStatusEffect", multiplier: 7},
+            {tier: 3, weight: 24, type: "weapon", name: "of Avarice", property:"When damage is rolled after hitting with this weapon, roll a d4. On a 4, maximize all damage dice. On 2-3, damage is calculated as usual. On a 1, the attack deals 0 damage.", category: "damageBonusConditional", multiplier: 7},
+            {tier: 3, weight: 24, type: "weapon", name: "of Maiming", property:"After hitting a creature with this weapon, they cannot make any reactions for 1d4 turns.  ", category: "appliedStatusEffect", multiplier: 7},   
+        ];
+const cursedPrefixTable = [
+            {tier: 1, weight: 7, type: "armor", name: "Rusted", property: "Cursed: You suffer a -1 to your AC.  ", category: "appliedStatusEffect", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "Crystaline", property: "Cursed: While using this item, your armor points are reduced by 5 to a minimum of 1. ", category: ".", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "Glass", property: "Cursed: While using this item, your armor points are reduced by half. ", category: ".", multiplier: 0.5},
+            {tier: 1, weight: 5, type: "armor", name: "Pitch", property: "Cursed: While using this item, your light sources have bright and dim light reduced by 10 feet.  ", category: "acBonus", multiplier: 0.5},
+            {tier: 1, weight: 7, type: "armor", name: "Tar", property: "Cursed: While using this item, you no longer gain the benefits of darkvision, if you have it.   ", category: "apMax", multiplier: 0.5},
+            {tier: 2, weight: 10, type: "armor", name: "Vulnerable", property: "Cursed: You suffer a -2 to your AC.  ", category: "apMax", multiplier: 0.25},
+            {tier: 3, weight: 14, type: "armor", name: "Brittle", property: "Cursed: You suffer a -3 to your AC.  ", category: "lightLevel", multiplier: 0.15},
+            {tier: 2, weight: 10, type: "both", name: "Frog's", property: "Cursed: While using this item, your spell points are reduced by 15 to a minimum of 1. ", category: "vision", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "both", name: "Toad's", property: "Cursed: While using this item, your spell points are reduced by half. ", category: "acBonus", multiplier: 0.25},
+            {tier: 1, weight: 8, type: "weapon", name: "Tin", property: "Cursed: You suffer a -1 to your weapon attack rolls.  ", category: "acBonus", multiplier: 0.5},
+            {tier: 1, weight: 5, type: "weapon", name: "Aluminum", property: "Cursed: You suffer a -2 to your weapon attack rolls.  ", category: "spMax", multiplier: 0.5},
+            {tier: 1, weight: 7, type: "weapon", name: "Bent", property: "Cursed: When rolling damage for an attack made with this weapon, any dice with a result higher than 3 are instead treated as a 3. ", category: "spMax", multiplier: 0.5},
+            {tier: 1, weight: 5, type: "weapon", name: "Dull", property: "Cursed: When rolling damage for an attack made with this weapon, any dice with a result higher than 2 are instead treated as a 2. ", category: "attackBonus", multiplier: 0.5},
+            {tier: 2, weight: 10, type: "weapon", name: "Copper", property: "Cursed: You suffer a -3 to your weapon attack rolls.  ", category: "attackBonus", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "weapon", name: "Useless", property: "Cursed: When rolling damage for an attack made with this weapon, all dice are treated as a 1.    ", category: "weaponReroll", multiplier: 0.25},
+        ];
+const cursedSuffixTable = [
+            {tier: 1, weight: 7, type: "armor", name: "of Tears", property: "Cursed: After you hit with a melee attack, you take 1 piercing damage.  ", category: ".", multiplier: 0.5},
+            {tier: 1, weight: 5, type: "armor", name: "of Pain", property: "Cursed: After you hit with a melee attack, you take 2 piercing damage.  ", category: ".", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of Weakness", property: "Cursed: While using this item, you suffer a -1 to your Strength score.", category: ".", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of Frailty", property: "Cursed: While using this item, you suffer a -1 to your Constitution score.", category: "thorns", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of Bumbling", property: "Cursed: While using this item, you suffer a -1 to your Dexterity score.", category: "thorns", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of Dyslexia", property: "Cursed: While using this item, you suffer a -1 to your Intelligence score.", category: "abilityScore", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of the Nitwit", property: "Cursed: While using this item, you suffer a -1 to your Wisdom score.", category: "abilityScore", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of Aversion", property: "Cursed: While using this item, you suffer a -1 to your Charisma score.", category: "abilityScore", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of the Snail", property: "Cursed: While using this item, your speed is halved.    ", category: "abilityScore", multiplier: 0.5},
+            {tier: 2, weight: 10, type: "armor", name: "of Atrophy", property: "Cursed: While using this item, you suffer a -2 to your Strength score.", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "armor", name: "of Disease", property: "Cursed: While using this item, you suffer a -2 to your Constitution score.", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "armor", name: "of Lumbering", property: "Cursed: While using this item, you suffer a -2 to your Dexterity score.", category: "moveSpeed", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "armor", name: "of the Oaf", property: "Cursed: While using this item, you suffer a -2 to your Intelligence score.", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "armor", name: "of the Gullable", property: "Cursed: While using this item, you suffer a -2 to your Wisdom score.", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "armor", name: "of Loathing", property: "Cursed: While using this item, you suffer a -2 to your Charisma score.", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 8, type: "armor", name: "of Trouble", property: "Cursed: While using this item, you suffer a -1 to all ability scores.  ", category: "abilityScore", multiplier: 0.25},
+            {tier: 3, weight: 14, type: "armor", name: "of Tribulation", property: "Cursed: While using this item, you suffer a -2 to all ability scores.  ", category: "abilityScore", multiplier: 0.15},
+            {tier: 1, weight: 7, type: "armor", name: "of Corruption", property: "Cursed: While in posession of this item, your maximum spell points cannot be more than twice your level.    ", category: "abilityScore", multiplier: 0.5},
+            {tier: 1, weight: 6, type: "armor", name: "of the Fool", property: "Cursed: While in posession of this item, you can only prepare or know 1 spell.    ", category: "abilityScore", multiplier: 0.5},
+            {tier: 2, weight: 10, type: "armor", name: "of Ruin", property: "Cursed: While using this item, you have disadvantage on all saving throws.    ", category: "abilityScore", multiplier: 0.25},
+            {tier: 2, weight: 9, type: "both", name: "of Pox", property: "Cursed: While in posession of this item, you cannot regain hit points from spells, features, or items.    ", category: "spMax", multiplier: 0.25},
+            {tier: 2, weight: 12, type: "both", name: "of Peril", property: "Cursed: While using this item, attacks against you are made at advantage.    ", category: "spellPrep", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "both", name: "of Sloth", property: "Cursed: While using this item, you can make only one attack roll per round, regardless of any additional features or effects.    ", category: "savingThrow", multiplier: 0.25},
+            {tier: 2, weight: 10, type: "both", name: "of Passivity", property: "Cursed: While using this item, you cannot make any opportunity attacks.    ", category: "hpHealing", multiplier: 0.25},
+        ];
+const rareName1 = [
+            "Beast", "Eagle", "Raven", "Viper", "Ghoul", "Skull", "Blood", "Dread", "Doom", "Grim", 
+            "Bone", "Death", "Shadow", "Storm", "Rune", "Plague", "Stone", "Wraith", "Spirit", "Demon", "Cruel", "Brimstone",
+            "Empyrian", "Bramble", "Pain", "Loath", "Glyph", "Imp", "Fiend", "Hailstone", "Gale", "Dire", "Soul",
+            "Corpse", "Carrion", "Armageddon", "Havoc", "Bitter", "Entropy", "Chaos", "Order", "Rule", "Corruption"
+        ];
+const rareName2 = [
+            "Bite", "Scalpel", "Gutter", "Razor", "Edge", "Splitter", "Sever", "Rend", "Slayer", "Spawn", "Star", 
+            "Smasher", "Crusher", "Grinder", "Mallet", "Lance", "Impaler", "Prod", "Wand", "Barb", "Dart", "Quarrel", 
+            "Flight", "Horn", "Quill", "Branch", "Song", "Cry", "Chant", "Gnarl", "Crest", "Veil", "Mask", "Casque", 
+            "Cowl", "Pelt", "Coat", "Suit", "Shroud", "Mantle", "Badge", "Aegis", "Tower", "Wing", "Emblem", "Fist", 
+            "Clutches", "Grasp", "Touch", "Knuckle", "Spur", "Stalker", "Blazer", "Trample", "Track", "Clasp", "Harness", 
+            "Fringe", "Chain", "Lash", "Knot", "Loop", "Turn", "Coil", "Band", "Talisman", "Noose", "Collar", "Torc", 
+            "Scarab", "Brand", "Cudgel", "Harp", "Barri", "Crook", "Shell", "Picket", "Flange", "Scratch", "Fang", 
+            "Thirst", "Scythe", "Saw", "Cleaver", "Sunder", "Mangler", "Reaver", "Gnash", "Blow", "Bane", "Breaker", 
+            "Crack", "Knell", "Spike", "Skewer", "Scourge", "Wrack", "Needle", "Bolt", "Fletch", "Nock", "Stinger", 
+            "Goad", "Spire", "Call", "Spell", "Weaver", "Visage", "Circlet", "Hood", "Brow", "Visor", "Hide", "Wood", 
+            "Carapace", "Wrap", "Cloak", "Jack", "Guard", "Rock", "Ward", "Shield", "Mark", "Hand", "Claw", "Grip", 
+            "Hold", "Finger", "Shank", "Tread", "Greave", "Nails", "Brogues", "Slippers", "Buckle", "Lock", "Winding", 
+            "Strap", "Cord", "Circle", "Eye", "Spiral", "Gyre", "Whorl", "Heart", "Necklace", "Beads", "Gorget",
+            "Bludgeon", "Loom", "Master", "Hew", "Mar", "Stake"
+        ];
+
