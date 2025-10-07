@@ -43,18 +43,18 @@
             };
         }
 
-        function generatePotion(tier) {
-            const roll = rollDie(15 * tier);
-            const potion = getWeightedRandomItem(potionTable, tier);
-            
-            return {
-                type: 'potion',
-                name: potion.name,
-                property: potion.property || "",
-                value: potion.value || 0
-            };
-        }
-
+function generatePotion(tier) {
+    const roll = rollDie(15 * tier);
+    const potion = getWeightedRandomItem(potionTable, tier);
+    
+    return {
+        type: 'potion',
+        name: potion.name,
+        property: potion.property || "",
+        value: potion.value || 0,
+        action: potion.action || ""
+    };
+}
         function generateSpellConsumable(tier) {
             const isBook = rollDie(20) === 20;
             const spellRoll = rollDie(25 * tier);
@@ -82,170 +82,235 @@
             };
         }
 
-        function generateGear(tier, guarantee = null) {
-            let isArmor, enchantRoll, isRare = false;
-            if (guarantee && guarantee.includes('armor')) {
-                isArmor = true;
-            } else if (guarantee && guarantee.includes('weapon')) {
-                isArmor = false;
-            } else {
-                isArmor = rollDie(20) <= 10;
+function generateGear(tier, guarantee = null) {
+    let isArmor, enchantRoll, isRare = false, isUnique = false;
+    if (guarantee && guarantee.includes('armor')) {
+        isArmor = true;
+    } else if (guarantee && guarantee.includes('weapon')) {
+        isArmor = false;
+    } else {
+        isArmor = rollDie(20) <= 10;
+    }
+    const baseItem = isArmor ? 
+        getWeightedRandomItem(armorTable, tier) : 
+        getWeightedRandomItem(weaponTable, tier);
+    
+    // Store base item reference
+    const baseItemIndex = isArmor ? 
+        armorTable.indexOf(baseItem) : 
+        weaponTable.indexOf(baseItem);
+    
+    let item = {
+        name: baseItem.name,
+        property: "",
+        value: baseItem.value,
+        multiplier: 1,
+        baseItemRef: baseItemIndex,
+        baseItemType: isArmor ? 'armor' : 'weapon',
+        affixes: []
+    };
+    
+    // Check for unique items first
+    if (!guarantee || guarantee.includes('unique')) {
+        let uniqueRoll = rollPercentage();
+        if (guarantee && guarantee.includes('unique')) {
+            uniqueRoll = 101; // Force unique
+        }
+        
+        if (uniqueRoll >= 98) { // 2% chance for unique
+            // Filter available uniques for this base item and tier
+            const availableUniques = uniqueTable.filter(u => 
+                u.baseItem === baseItem.name && 
+                u.baseItemType === (isArmor ? 'armor' : 'weapon') &&
+                u.tier <= tier
+            );
+            
+            if (availableUniques.length > 0) {
+                const chosenUnique = getWeightedRandomItem(availableUniques, 999); // High tier to include all
+                isUnique = true;
+                
+                item.name = chosenUnique.uniqueName;
+                item.isUnique = true;
+                item.uniqueData = chosenUnique;
+                item.property = chosenUnique.properties.map(p => `• ${p}`).join('<br>');
+                item.multiplier = chosenUnique.multiplier;
+                item.value = Math.max(1, Math.floor(baseItem.value * chosenUnique.multiplier));
+                
+                return item;
             }
-            const baseItem = isArmor ? 
-                getWeightedRandomItem(armorTable, tier) : 
-                getWeightedRandomItem(weaponTable, tier);
-            let item = {
-                name: baseItem.name,
-                property: "",
-                value: baseItem.value,
-                multiplier: 1
-            };
-            if (!guarantee || !guarantee.includes('mundane')) {
-                if (guarantee && guarantee.includes('rare')) {
-                    isRare = true;
-                } else if (rollPercentage() >= 95) {
-                    isRare = true;
+        }
+    }
+    
+    // Check for rare items (only if not unique and not mundane guarantee)
+    if (!isUnique && (!guarantee || !guarantee.includes('mundane'))) {
+        if (guarantee && guarantee.includes('rare')) {
+            isRare = true;
+        } else if (rollPercentage() >= 95) { // 5% chance for rare
+            isRare = true;
+        }
+    }
+    
+    if (isRare) {
+        const numAffixes = rollDie(4) + 1;
+        const name1 = rareName1[rollDie(rareName1.length) - 1];
+        const name2 = rareName2[rollDie(rareName2.length) - 1];
+        item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
+        item.isRare = true;
+        let properties = [];
+        let usedCategories = new Set();
+        
+        for (let i = 0; i < numAffixes; i++) {
+            const isPrefix = rollDie(2) === 1;
+            const table = isPrefix ? prefixTable : suffixTable;
+                
+            const affix = getWeightedRandomItem(table.filter(a => 
+                a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
+            ), tier);
+            
+            if (affix) {
+                if (!usedCategories.has(affix.category)) {
+                    usedCategories.add(affix.category);
+                    properties.push(`• ${affix.property}`);
+                    item.multiplier += affix.multiplier;
+                    
+                    item.affixes.push({
+                        name: affix.name,
+                        property: affix.property,
+                        isPrefix: isPrefix,
+                        isCursed: false
+                    });
+                }
+            }
+        }
+        
+        item.property = properties.join('<br>');
+    } else {
+        // Regular enchanted/mundane logic
+        if (guarantee && guarantee.includes('mundane')) {
+            enchantRoll = 1;
+        } else if (guarantee && guarantee.includes('prefix')) {
+            enchantRoll = 10;
+        } else if (guarantee && guarantee.includes('suffix')) {
+            enchantRoll = 15;
+        } else if (guarantee && guarantee.includes('both')) {
+            enchantRoll = 20;
+        } else if (guarantee && guarantee.includes('magic')) {
+            enchantRoll = rollDie(12) + 8;
+        } else {
+            enchantRoll = rollDie(20);
+        }
+        
+        if (enchantRoll >= 9) {
+            item.value += 15;
+            
+            const hasPrefix = enchantRoll >= 9 && (enchantRoll <= 13 || enchantRoll >= 19);
+            const hasSuffix = enchantRoll >= 14;
+            
+            let properties = [];
+            let usedCategories = new Set();
+            
+            if (hasPrefix) {
+                const isCursed = rollDie(50) === 1;
+                const table = isCursed ? cursedPrefixTable : prefixTable;
+                const prefix = getWeightedRandomItem(table.filter(a => 
+                    a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
+                ), tier);
+                
+                if (prefix) {
+                    item.name = `${prefix.name} ${item.name}`;
+                    usedCategories.add(prefix.category);
+                    properties.push(`• ${prefix.property}`);
+                    item.multiplier += prefix.multiplier;
+                    if (isCursed) item.isCursed = true;
+                    
+                    item.affixes.push({
+                        name: prefix.name,
+                        property: prefix.property,
+                        isPrefix: true,
+                        isCursed: isCursed
+                    });
                 }
             }
             
-            if (isRare) {
-                const numAffixes = rollDie(4) + 1;
-                const name1 = rareName1[rollDie(rareName1.length) - 1];
-                const name2 = rareName2[rollDie(rareName2.length) - 1];
-                item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
-                item.isRare = true;
-                let properties = [];
-                let usedCategories = new Set();
+            if (hasSuffix) {
+                const isCursed = rollDie(50) === 1;
+                const table = isCursed ? cursedSuffixTable : suffixTable;
                 
-                for (let i = 0; i < numAffixes; i++) {
-                    const isPrefix = rollDie(2) === 1;
-                    const table = isPrefix ? prefixTable : suffixTable;
-                        
-                    const affix = getWeightedRandomItem(table.filter(a => 
+                let availableAffixes = table.filter(a => 
+                    (a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')) &&
+                    !usedCategories.has(a.category)
+                );
+                
+                if (availableAffixes.length === 0) {
+                    availableAffixes = table.filter(a => 
                         a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
-                    ), tier);
-                    
-                    if (affix) {
-                        if (!usedCategories.has(affix.category)) {
-                            usedCategories.add(affix.category);
-                            properties.push(`• ${affix.property}`);
-                            item.multiplier += affix.multiplier;
-                        }
-                    }
+                    );
                 }
                 
-                item.property = properties.join('<br>');
-            } else {
-                if (guarantee && guarantee.includes('mundane')) {
-                    enchantRoll = 1;
-                } else if (guarantee && guarantee.includes('prefix')) {
-                    enchantRoll = 10;
-                } else if (guarantee && guarantee.includes('suffix')) {
-                    enchantRoll = 15;
-                } else if (guarantee && guarantee.includes('both')) {
-                    enchantRoll = 20;
-                } else if (guarantee && guarantee.includes('magic')) {
-                    enchantRoll = rollDie(12) + 8;
-                } else {
-                    enchantRoll = rollDie(20);
-                }
+                const suffix = getWeightedRandomItem(availableAffixes, tier);
                 
-                if (enchantRoll >= 9) {
-                    item.value += 15;
+                if (suffix) {
+                    item.name = `${item.name} ${suffix.name}`;
+                    usedCategories.add(suffix.category);
+                    properties.push(`• ${suffix.property}`);
+                    item.multiplier += suffix.multiplier;
+                    if (isCursed) item.isCursed = true;
                     
-                    const hasPrefix = enchantRoll >= 9 && (enchantRoll <= 13 || enchantRoll >= 19);
-                    const hasSuffix = enchantRoll >= 14;
-                    
-                    let properties = [];
-                    let usedCategories = new Set();
-                    
-                    if (hasPrefix) {
-                        const isCursed = rollDie(50) === 1;
-                        const table = isCursed ? cursedPrefixTable : prefixTable;
-                        const prefix = getWeightedRandomItem(table.filter(a => 
-                            a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
-                        ), tier);
-                        
-                        if (prefix) {
-                            item.name = `${prefix.name} ${item.name}`;
-                            usedCategories.add(prefix.category);
-                            properties.push(`• ${prefix.property}`);
-                            item.multiplier += prefix.multiplier;
-                            if (isCursed) item.isCursed = true;
-                        }
-                    }
-                    
-                    if (hasSuffix) {
-                        const isCursed = rollDie(50) === 1;
-                        const table = isCursed ? cursedSuffixTable : suffixTable;
-                        
-                        let availableAffixes = table.filter(a => 
-                            (a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')) &&
-                            !usedCategories.has(a.category)
-                        );
-                        
-                        if (availableAffixes.length === 0) {
-                            availableAffixes = table.filter(a => 
-                                a.type === 'both' || (isArmor && a.type === 'armor') || (!isArmor && a.type === 'weapon')
-                            );
-                        }
-                        
-                        const suffix = getWeightedRandomItem(availableAffixes, tier);
-                        
-                        if (suffix) {
-                            item.name = `${item.name} ${suffix.name}`;
-                            usedCategories.add(suffix.category);
-                            properties.push(`• ${suffix.property}`);
-                            item.multiplier += suffix.multiplier;
-                            if (isCursed) item.isCursed = true;
-                        }
-                    }
-                    
-                    item.property = properties.join('<br>');
+                    item.affixes.push({
+                        name: suffix.name,
+                        property: suffix.property,
+                        isPrefix: false,
+                        isCursed: isCursed
+                    });
                 }
             }
             
-            item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
-            
-            return item;
+            item.property = properties.join('<br>');
         }
+    }
+    
+    item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
+    
+    return item;
+}
 
-        function generateSingleLoot(characterLevel, dungeonLevel, guarantee = null) {
-            const tier = getLootLevel(characterLevel, dungeonLevel);
-            let roll;
-           
-            if (guarantee === 'no-loot') return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
-            if (guarantee === 'gold') roll = 7;
-            else if (guarantee === 'potion') roll = 9;
-            else if (guarantee === 'spell-consumable') roll = 11;
-            else if (guarantee && guarantee.includes('gear') || guarantee && guarantee.includes('weapon') || guarantee && guarantee.includes('armor')) roll = 13;
-            else roll = rollDie(20);
-           
-            let result = null;
-            let hasExtraRoll = false;
-           
-            if (roll <= 6) {
-                return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
-            } else if (roll <= 8) {
-                result = generateGold(characterLevel, dungeonLevel);
-                hasExtraRoll = rollDie(20) >= 18;
-            } else if (roll <= 10) {
-                result = generatePotion(tier);
-                hasExtraRoll = rollDie(20) >= 18;
-            } else if (roll <= 12) {
-                result = generateSpellConsumable(tier);
-            } else {
-                result = generateGear(tier, guarantee);
-            }
-           
-            if (hasExtraRoll && !guarantee) {
-                const extraLoot = generateSingleLoot(characterLevel, dungeonLevel);
-                return [result, extraLoot].filter(item => item && item.type !== 'no-loot');
-            }
-           
-            return result;
-        }
-
+function generateSingleLoot(characterLevel, dungeonLevel, guarantee = null) {
+    const tier = getLootLevel(characterLevel, dungeonLevel);
+    let roll;
+   
+    if (guarantee === 'no-loot') return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
+    if (guarantee === 'gold') roll = 7;
+    else if (guarantee === 'potion') roll = 9;
+    else if (guarantee === 'spell-consumable') roll = 11;
+    else if (guarantee && (guarantee.includes('gear') || guarantee.includes('weapon') || guarantee.includes('armor') || guarantee.includes('unique') || guarantee.includes('rare') || guarantee.includes('magic') || guarantee.includes('mundane') || guarantee.includes('prefix') || guarantee.includes('suffix') || guarantee.includes('both'))) {
+        roll = 13;
+    }
+    else roll = rollDie(20);
+   
+    let result = null;
+    let hasExtraRoll = false;
+   
+    if (roll <= 6) {
+        return { type: 'no-loot', name: 'No Loot', value: 0, property: "" };
+    } else if (roll <= 8) {
+        result = generateGold(characterLevel, dungeonLevel);
+        hasExtraRoll = rollDie(20) >= 18;
+    } else if (roll <= 10) {
+        result = generatePotion(tier);
+        hasExtraRoll = rollDie(20) >= 18;
+    } else if (roll <= 12) {
+        result = generateSpellConsumable(tier);
+    } else {
+        result = generateGear(tier, guarantee);
+    }
+   
+    if (hasExtraRoll && !guarantee) {
+        const extraLoot = generateSingleLoot(characterLevel, dungeonLevel);
+        return [result, extraLoot].filter(item => item && item.type !== 'no-loot');
+    }
+   
+    return result;
+}
         function generateLoot() {
             const characterLevel = parseInt(document.getElementById('characterLevel').value) || 1;
             const dungeonLevel = parseInt(document.getElementById('dungeonLevel').value) || 1;
@@ -275,55 +340,73 @@
             generateBtn.textContent = `Generate Loot (Tier ${tier})`;
         }
 
-        function displayResults(results) {
-            const resultsDiv = document.getElementById('results');
-            if (results.length === 0) {
-                resultsDiv.innerHTML = '<div class="no-loot">No loot.</div>';
-                return;
-            }
-           
-            let html = '';
-            let totalValue = 0;
-           
-            results.forEach(item => {
-                totalValue += item.value || 0;
-                let className = 'loot-item';
-               
-                if (item.type === 'no-loot') {
-                    className += ' nothing';
-                } else if (item.type === 'gold') {
-                    className += ' gold';
-                } else if (item.type === 'potion') {
-                    className += ' potion';
-                } else if (item.type === 'magic-consumable') {
-                    className += ' magic-consumable';
-                } else if (item.isRare) {
-                    className += ' rare';
-                } else if (item.isCursed) {
-                    className += ' cursed';
-                } else if (item.property && item.property.trim() !== '') {
-                    className += ' enchanted';
-                } else {
-                    className += ' mundane';
-                }
-               
-                html += `
-                    <div class="${className}">
-                        <button class="delete-btn" onclick="this.parentElement.remove(); updateTotalValue();">&times;</button>
-                        <button class="copy-btn" onclick="copyLootItem(this);">⧉</button>
-                        <h3>${item.name}</h3>
-                        <div class="loot-properties">${item.property} </div>
-                        <div class="loot-value">Value: ${item.value || 0} gp</div>
-                    </div>
-                `;
-            });
-           
-            html += `<div class="total-value">
-                Total Value: ${totalValue} gp
-            </div>`;
-           
-            resultsDiv.innerHTML = html;
+function displayResults(results) {
+    const resultsDiv = document.getElementById('results');
+    if (results.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-loot">No loot.</div>';
+        return;
+    }
+   
+    let html = '';
+    let totalValue = 0;
+   
+    results.forEach((item, index) => {
+        totalValue += item.value || 0;
+        let className = 'loot-item';
+       
+        if (item.type === 'no-loot') {
+            className += ' nothing';
+        } else if (item.type === 'gold') {
+            className += ' gold';
+        } else if (item.type === 'potion') {
+            className += ' potion';
+        } else if (item.type === 'magic-consumable') {
+            className += ' magic-consumable';
+        } else if (item.isUnique) {
+            className += ' unique';
+        } else if (item.isRare) {
+            className += ' rare';
+        } else if (item.isCursed) {
+            className += ' cursed';
+        } else if (item.property && item.property.trim() !== '') {
+            className += ' enchanted';
+        } else {
+            className += ' mundane';
         }
+       
+        html += `
+            <div class="${className}" data-item-index="${index}">
+                <button class="delete-btn" onclick="this.parentElement.remove(); updateTotalValue();">&times;</button>
+                <button class="copy-btn" onclick="copyLootItem(this);">⧉</button>
+                <h3>${item.name}</h3>
+                <div class="loot-properties">${item.property} </div>
+                <div class="loot-value">Value: ${item.value || 0} gp</div>
+            </div>
+        `;
+    });
+   
+    html += `<div class="total-value">
+        Total Value: ${totalValue} gp
+    </div>`;
+   
+    resultsDiv.innerHTML = html;
+    
+    // Add click handlers and store item details
+    results.forEach((item, index) => {
+        const itemElement = resultsDiv.querySelector(`[data-item-index="${index}"]`);
+        if (itemElement) {
+            itemElement.itemDetails = item;
+            itemElement.style.cursor = 'pointer';
+            itemElement.addEventListener('click', function(e) {
+                if (e.target.classList.contains('delete-btn') || 
+                    e.target.classList.contains('copy-btn')) {
+                    return;
+                }
+                showItemDetails(itemElement);
+            });
+        }
+    });
+}
 
         function updateTotalValue() {
             const resultsDiv = document.getElementById('results');
@@ -854,109 +937,132 @@
             }
         }
 
-        function generateCustomItem() {
-            const itemType = document.getElementById('itemType').value;
-            const baseItemIndex = parseInt(document.getElementById('baseItem').value) || 0;
-            const quality = document.getElementById('itemQuality').value;
-
+function generateCustomItem() {
+    const itemType = document.getElementById('itemType').value;
+    const baseItemIndex = parseInt(document.getElementById('baseItem').value) || 0;
+    const quality = document.getElementById('itemQuality').value;
+    
+    const baseTable = itemType === 'weapon' ? weaponTable : armorTable;
+    const baseItem = baseTable[baseItemIndex];
+    
+    if (!baseItem) return null;
+    
+    let item = {
+        name: baseItem.name,
+        property: "",
+        value: baseItem.value,
+        multiplier: 1,
+        type: 'gear',
+        baseItemRef: baseItemIndex,
+        baseItemType: itemType,
+        affixes: []
+    };
+    
+    let className = 'created-item';
+    let isCursed = false;
+    
+    if (quality === 'enchanted') {
+        const prefixValue = document.getElementById('prefixSelect').value;
+        const suffixValue = document.getElementById('suffixSelect').value;
+        
+        let properties = [];
+        
+        if (prefixValue) {
+            const [type, index] = prefixValue.split('_');
+            let prefix;
+            let prefixIsCursed = false;
             
-            const baseTable = itemType === 'weapon' ? weaponTable : armorTable;
-            const baseItem = baseTable[baseItemIndex];
-            
-            if (!baseItem) return null;
-            
-            let item = {
-                name: baseItem.name,
-                property: "",
-                value: baseItem.value,
-                multiplier: 1,
-                type: 'gear'
-            };
-            
-            let className = 'created-item';
-            let isCursed = false;
-            
-            if (quality === 'enchanted') {
-                const prefixValue = document.getElementById('prefixSelect').value;
-                const suffixValue = document.getElementById('suffixSelect').value;
-                
-                let properties = [];
-                
-                if (prefixValue) {
-                    const [type, index] = prefixValue.split('_');
-                    let prefix;
-                    
-                    if (type === 'normal') {
-                        prefix = prefixTable[parseInt(index)];
-                    } else if (type === 'cursed') {
-                        prefix = cursedPrefixTable[parseInt(index)];
-                        isCursed = true;
-                    }
-                    
-                    if (prefix) {
-                        item.name = `${prefix.name} ${item.name}`;
-                        properties.push(`• ${prefix.property}`);
-                        item.multiplier += prefix.multiplier;
-                    }
-                }
-                
-                if (suffixValue) {
-                    const [type, index] = suffixValue.split('_');
-                    let suffix;
-                    
-                    if (type === 'normal') {
-                        suffix = suffixTable[parseInt(index)];
-                    } else if (type === 'cursed') {
-                        suffix = cursedSuffixTable[parseInt(index)];
-                        isCursed = true;
-                    }
-                    
-                    if (suffix) {
-                        item.name = `${item.name} ${suffix.name}`;
-                        properties.push(`• ${suffix.property}`);
-                        item.multiplier += suffix.multiplier;
-                    }
-                }
-                
-                item.property = properties.join('<br>');
-                className += isCursed ? ' preview-cursed' : ' preview-enchanted';
-                if (properties.length > 0) item.value += 15;
-                
-            } else if (quality === 'rare') {
-                const name1 = document.getElementById('rareName1').value;
-                const name2 = document.getElementById('rareName2').value;
-                
-                item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
-                item.isRare = true;
-                className += ' preview-rare';
-                
-                let properties = [];
-                selectedAffixes.forEach(affix => {
-                    properties.push(`• ${affix.property}`);
-                    item.multiplier += affix.multiplier;
-                    if (affix.isCursed) isCursed = true;
-                });
-                
-                item.property = properties.join('<br>');
-                if (isCursed) className = className.replace('preview-rare', 'preview-cursed');
-                
-            } else {
-                className += ' preview-mundane';
+            if (type === 'normal') {
+                prefix = prefixTable[parseInt(index)];
+            } else if (type === 'cursed') {
+                prefix = cursedPrefixTable[parseInt(index)];
+                prefixIsCursed = true;
+                isCursed = true;
             }
             
-            // Set cursed flag for proper styling in results
-            if (isCursed) item.isCursed = true;
-            if (quality === 'rare') item.isRare = true;
-            
-            // Calculate final value
-            item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
-            
-            // Display the preview
-            updateItemPreview(item, className);
-            
-            // Return the item for adding to results
-            return item;
+            if (prefix) {
+                item.name = `${prefix.name} ${item.name}`;
+                properties.push(`• ${prefix.property}`);
+                item.multiplier += prefix.multiplier;
+                
+                item.affixes.push({
+                    name: prefix.name,
+                    property: prefix.property,
+                    isPrefix: true,
+                    isCursed: prefixIsCursed
+                });
+            }
         }
+        
+        if (suffixValue) {
+            const [type, index] = suffixValue.split('_');
+            let suffix;
+            let suffixIsCursed = false;
+            
+            if (type === 'normal') {
+                suffix = suffixTable[parseInt(index)];
+            } else if (type === 'cursed') {
+                suffix = cursedSuffixTable[parseInt(index)];
+                suffixIsCursed = true;
+                isCursed = true;
+            }
+            
+            if (suffix) {
+                item.name = `${item.name} ${suffix.name}`;
+                properties.push(`• ${suffix.property}`);
+                item.multiplier += suffix.multiplier;
+                
+                item.affixes.push({
+                    name: suffix.name,
+                    property: suffix.property,
+                    isPrefix: false,
+                    isCursed: suffixIsCursed
+                });
+            }
+        }
+        
+        item.property = properties.join('<br>');
+        className += isCursed ? ' preview-cursed' : ' preview-enchanted';
+        if (properties.length > 0) item.value += 15;
+        
+    } else if (quality === 'rare') {
+        const name1 = document.getElementById('rareName1').value;
+        const name2 = document.getElementById('rareName2').value;
+        
+        item.name = `"${name1} ${name2}"<br>${baseItem.name}<br>`;
+        item.isRare = true;
+        className += ' preview-rare';
+        
+        let properties = [];
+        selectedAffixes.forEach(affix => {
+            properties.push(`• ${affix.property}`);
+            item.multiplier += affix.multiplier;
+            if (affix.isCursed) isCursed = true;
+            
+            item.affixes.push({
+                name: affix.name,
+                property: affix.property,
+                isPrefix: affix.isPrefix,
+                isCursed: affix.isCursed
+            });
+        });
+        
+        item.property = properties.join('<br>');
+        if (isCursed) className = className.replace('preview-rare', 'preview-cursed');
+        
+    } else {
+        className += ' preview-mundane';
+    }
+    
+    if (isCursed) item.isCursed = true;
+    if (quality === 'rare') item.isRare = true;
+    
+    item.value = Math.max(1, Math.floor(item.value * Math.max(0.1, item.multiplier)));
+    
+    updateItemPreview(item, className);
+    
+    return item;
+}
 
         function updateItemPreview(item, className) {
             const previewDiv = document.getElementById('createdItem');
@@ -1086,6 +1192,184 @@
             document.getElementById('characterLevel').addEventListener('input', updateGenerateButton);
             document.getElementById('dungeonLevel').addEventListener('input', updateGenerateButton);
         });
+// Store for tracking selected item details
+let selectedItemDetails = null;
+
+function showItemDetails(itemElement) {
+    // Get item data from the element
+    const name = itemElement.querySelector('h3').innerHTML;
+    const properties = itemElement.querySelector('.loot-properties').textContent.trim();
+    const valueText = itemElement.querySelector('.loot-value').textContent;
+    const value = parseInt(valueText.match(/\d+/)[0]) || 0;
+    
+    // Get item type from classes
+    let itemType = null;
+    if (itemElement.classList.contains('gold')) itemType = 'gold';
+    else if (itemElement.classList.contains('potion')) itemType = 'potion';
+    else if (itemElement.classList.contains('magic-consumable')) itemType = 'magic-consumable';
+    else itemType = 'gear';
+    
+    // Get stored item details if available
+    const storedDetails = itemElement.itemDetails;
+    
+    // Open the side pane
+    openDetailPane(name, properties, value, itemType, storedDetails);
+}
+
+function openDetailPane(name, properties, value, itemType, details) {
+    let pane = document.getElementById('detailPane');
+    
+    if (!pane) {
+        pane = document.createElement('div');
+        pane.id = 'detailPane';
+        pane.className = 'detail-pane';
+        document.body.appendChild(pane);
+    }
+    
+    let content = '';
+    
+    if (itemType === 'gold') {
+        content = `
+            <div class="detail-header">
+                <h2>Gold</h2>
+                <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+            </div>
+            <div class="detail-body">
+                <div class="detail-section">
+                    <p class="gold-amount">${name}</p>
+                </div>
+            </div>
+        `;
+    } else if (itemType === 'potion') {
+        content = `
+            <div class="detail-header">
+                <h2>Potion</h2>
+                <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+            </div>
+            <div class="detail-body">
+                <div class="detail-section">
+                    <h3 class="section-title">${name}</h3>
+                    ${details && details.action ? `<p><strong>Action Type:</strong> ${details.action}</p>` : ''}
+                    <p><strong>Effect:</strong> ${properties}</p>
+                </div>
+            </div>
+        `;
+    } else if (itemType === 'magic-consumable') {
+        const spellName = name.match(/of (.+)$/)?.[1] || '';
+        const spell = spellTable.find(s => s.name === spellName);
+        
+        content = `
+            <div class="detail-header">
+                <h2>Spell Consumable</h2>
+                <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+            </div>
+            <div class="detail-body">
+                <div class="detail-section">
+                    <h3 class="section-title">${name}</h3>
+                    <p>${properties}</p>
+                    ${spell && spell.link ? `<p><a href="${spell.link}" target="_blank" class="spell-link">View Spell Details →</a></p>` : ''}
+                </div>
+            </div>
+        `;
+    } else if (itemType === 'gear') {
+        const isUnique = details && details.isUnique;
+        const isRare = details && details.isRare;
+        const baseItemRef = details && details.baseItemRef;
+        const baseItemType = details && details.baseItemType;
+        const affixes = details && details.affixes;
+        
+        let baseItem = null;
+        if (baseItemRef !== undefined && baseItemType) {
+            baseItem = baseItemType === 'weapon' ? weaponTable[baseItemRef] : armorTable[baseItemRef];
+        }
+        
+        const headerTitle = isUnique ? 'Unique Item' : (baseItemType === 'weapon' ? 'Weapon' : baseItemType === 'armor' ? 'Armor' : 'Gear');
+        
+        content = `
+            <div class="detail-header ${isUnique ? 'unique-header' : ''}">
+                <h2>${headerTitle}</h2>
+                <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+            </div>
+            <div class="detail-body">
+                <div class="detail-section">
+                    <h3 class="section-title ${isUnique ? 'unique-title' : ''}">${name.replace(/<br>/g, ' ')}</h3>
+                </div>
+        `;
+        
+        // Display base item stats
+        if (baseItem) {
+            content += '<div class="detail-section"><h4 class="subsection-title">Base Stats</h4>';
+            
+            if (baseItemType === 'weapon') {
+                content += `
+                    ${baseItem.quality ? `<p><strong>Quality:</strong> ${baseItem.quality}</p>` : ''}
+                    <p><strong>Class:</strong> ${baseItem.class}</p>
+                    <p><strong>Damage:</strong> ${baseItem.damage}</p>
+                    ${baseItem.weaponProperties && baseItem.weaponProperties !== '-' ? `<p><strong>Properties:</strong> ${baseItem.weaponProperties}</p>` : ''}
+                    <p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>
+                    ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
+                    ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
+                    ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess Bonus:</strong> ${baseItem.prowessBonus}</p>` : ''}
+                `;
+            } else if (baseItemType === 'armor') {
+                content += `
+                    <p><strong>Class:</strong> ${baseItem.class}</p>
+                    ${baseItem.armorClass && baseItem.armorClass !== '-' ? `<p><strong>Armor Class:</strong> ${baseItem.armorClass}</p>` : ''}
+                    ${baseItem.dexMax && baseItem.dexMax !== '-' ? `<p><strong>Dex Max:</strong> ${baseItem.dexMax}</p>` : ''}
+                    ${baseItem.proficiency && baseItem.proficiency !== '-' ? `<p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>` : ''}
+                    ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
+                    ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
+                    ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess Bonus:</strong> ${baseItem.prowessBonus}</p>` : ''}
+                `;
+            }
+            
+            content += '</div>';
+        }
+        
+        // Display unique properties or affixes
+        if (isUnique && details.uniqueData) {
+            content += '<div class="detail-section"><h4 class="subsection-title">Unique Properties</h4>';
+            details.uniqueData.properties.forEach(prop => {
+                content += `
+                    <div class="unique-property">
+                        <p>${prop}</p>
+                    </div>
+                `;
+            });
+            content += '</div>';
+        } else if (affixes && affixes.length > 0) {
+            content += '<div class="detail-section"><h4 class="subsection-title">Magical Properties</h4>';
+            affixes.forEach(affix => {
+                content += `
+                    <div class="affix-detail">
+                        <p class="affix-name"><strong>${affix.name}${affix.isCursed ? ' (Cursed)' : ''}</strong></p>
+                        <p class="affix-property">${affix.property}</p>
+                    </div>
+                `;
+            });
+            content += '</div>';
+        } else if (properties && properties.trim() !== '') {
+            content += `
+                <div class="detail-section">
+                    <h4 class="subsection-title">Properties</h4>
+                    <div class="properties-text">${properties}</div>
+                </div>
+            `;
+        }
+        
+        content += '</div>';
+    }
+    
+    pane.innerHTML = content;
+    pane.classList.add('open');
+}
+
+function closeDetailPane() {
+    const pane = document.getElementById('detailPane');
+    if (pane) {
+        pane.classList.remove('open');
+    }
+}
 
 const potionTable = [
             {tier: 1, name: "Small Healing Potion", property: "Restores 1 Healing Surges", action:'Bonus Action', value:25, weight:10},
@@ -1955,4 +2239,190 @@ const rareName2 = [
             "Strap", "Cord", "Circle", "Eye", "Spiral", "Gyre", "Whorl", "Heart", "Necklace", "Beads", "Gorget",
             "Bludgeon", "Loom", "Master", "Hew", "Mar", "Stake"
         ];
+
+        const uniqueTable = [
+    // Unique Weapons
+    {baseItem: "Club", baseItemType: "weapon", uniqueName: "unique Club", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Dagger", baseItemType: "weapon", uniqueName: "unique Dagger", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Greatclub", baseItemType: "weapon", uniqueName: "unique Greatclub", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Handaxe", baseItemType: "weapon", uniqueName: "unique Handaxe", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Javelin", baseItemType: "weapon", uniqueName: "unique Javelin", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Light Hammer", baseItemType: "weapon", uniqueName: "unique Light Hammer", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Mace", baseItemType: "weapon", uniqueName: "unique Mace", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Metal Knuckles", baseItemType: "weapon", uniqueName: "unique Metal Knuckles", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Quarterstaff", baseItemType: "weapon", uniqueName: "unique Quarterstaff", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Sickle", baseItemType: "weapon", uniqueName: "unique Sickle", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Spear", baseItemType: "weapon", uniqueName: "unique Spear", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Light Crossbow", baseItemType: "weapon", uniqueName: "unique Light Crossbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Dart", baseItemType: "weapon", uniqueName: "unique Dart", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Shortbow", baseItemType: "weapon", uniqueName: "unique Shortbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Sling", baseItemType: "weapon", uniqueName: "unique Sling", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Battleaxe", baseItemType: "weapon", uniqueName: "unique Battleaxe", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Flail", baseItemType: "weapon", uniqueName: "unique Flail", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Glaive", baseItemType: "weapon", uniqueName: "unique Glaive", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Greataxe", baseItemType: "weapon", uniqueName: "unique Greataxe", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Greatsword", baseItemType: "weapon", uniqueName: "unique Greatsword", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Halberd", baseItemType: "weapon", uniqueName: "unique Halberd", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Lance", baseItemType: "weapon", uniqueName: "unique Lance", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Longsword", baseItemType: "weapon", uniqueName: "unique Longsword", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Maul", baseItemType: "weapon", uniqueName: "unique Maul", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Morningstar", baseItemType: "weapon", uniqueName: "unique Morningstar", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Pike", baseItemType: "weapon", uniqueName: "unique Pike", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Rapier", baseItemType: "weapon", uniqueName: "unique Rapier", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Scimitar", baseItemType: "weapon", uniqueName: "unique Scimitar", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Scythe", baseItemType: "weapon", uniqueName: "unique Scythe", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Shortsword", baseItemType: "weapon", uniqueName: "unique Shortsword", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Trident", baseItemType: "weapon", uniqueName: "unique Trident", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Warhammer", baseItemType: "weapon", uniqueName: "unique Warhammer", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "War pick", baseItemType: "weapon", uniqueName: "unique War pick", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Whip", baseItemType: "weapon", uniqueName: "unique Whip", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Blowgun", baseItemType: "weapon", uniqueName: "unique Blowgun", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Hand Crossbow", baseItemType: "weapon", uniqueName: "unique Hand Crossbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Heavy Crossbow", baseItemType: "weapon", uniqueName: "unique Heavy Crossbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Longbow", baseItemType: "weapon", uniqueName: "unique Longbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Cudgel", baseItemType: "weapon", uniqueName: "unique Cudgel", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Dirk", baseItemType: "weapon", uniqueName: "unique Dirk", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Gnarled Club", baseItemType: "weapon", uniqueName: "unique Gnarled Club", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Hatchet", baseItemType: "weapon", uniqueName: "unique Hatchet", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Harpoon", baseItemType: "weapon", uniqueName: "unique Harpoon", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Knobkerrie", baseItemType: "weapon", uniqueName: "unique Knobkerrie", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Mallet", baseItemType: "weapon", uniqueName: "unique Mallet", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Claws", baseItemType: "weapon", uniqueName: "unique Claws", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "War Staff", baseItemType: "weapon", uniqueName: "unique War Staff", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Hand Scythe", baseItemType: "weapon", uniqueName: "unique Hand Scythe", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Mancatcher", baseItemType: "weapon", uniqueName: "unique Mancatcher", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Arbalest", baseItemType: "weapon", uniqueName: "unique Arbalest", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Shuriken", baseItemType: "weapon", uniqueName: "unique Shuriken", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Horse Bow", baseItemType: "weapon", uniqueName: "unique Horse Bow", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Hurler", baseItemType: "weapon", uniqueName: "unique Hurler", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Bearded Axe", baseItemType: "weapon", uniqueName: "unique Bearded Axe", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Shredder", baseItemType: "weapon", uniqueName: "unique Shredder", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Bardiche", baseItemType: "weapon", uniqueName: "unique Bardiche", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Executioner", baseItemType: "weapon", uniqueName: "unique Executioner", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Claymore", baseItemType: "weapon", uniqueName: "unique Claymore", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Poleaxe", baseItemType: "weapon", uniqueName: "unique Poleaxe", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Ranseur", baseItemType: "weapon", uniqueName: "unique Ranseur", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Broad Sword", baseItemType: "weapon", uniqueName: "unique Broad Sword", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Sledge", baseItemType: "weapon", uniqueName: "unique Sledge", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Flanged Mace", baseItemType: "weapon", uniqueName: "unique Flanged Mace", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Partisan", baseItemType: "weapon", uniqueName: "unique Partisan", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Spadroon", baseItemType: "weapon", uniqueName: "unique Spadroon", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Sabre", baseItemType: "weapon", uniqueName: "unique Sabre", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Giant Thresher", baseItemType: "weapon", uniqueName: "unique Giant Thresher", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Gladius", baseItemType: "weapon", uniqueName: "unique Gladius", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Brandistock", baseItemType: "weapon", uniqueName: "unique Brandistock", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Battle Gavel", baseItemType: "weapon", uniqueName: "unique Battle Gavel", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Crowbill", baseItemType: "weapon", uniqueName: "unique Crowbill", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Flog", baseItemType: "weapon", uniqueName: "unique Flog", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Sarbacan", baseItemType: "weapon", uniqueName: "unique Sarbacan", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Stake Thrower", baseItemType: "weapon", uniqueName: "unique Stake Thrower", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Ballista", baseItemType: "weapon", uniqueName: "unique Ballista", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "War Bow", baseItemType: "weapon", uniqueName: "unique War Bow", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Truncheon", baseItemType: "weapon", uniqueName: "unique Truncheon", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Stiletto", baseItemType: "weapon", uniqueName: "unique Stiletto", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Tyrant", baseItemType: "weapon", uniqueName: "unique Tyrant", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Cleaver", baseItemType: "weapon", uniqueName: "unique Cleaver", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Dardo", baseItemType: "weapon", uniqueName: "unique Dardo", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Hurlbat", baseItemType: "weapon", uniqueName: "unique Hurlbat", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Scepter", baseItemType: "weapon", uniqueName: "unique Scepter", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Kaiser Fist", baseItemType: "weapon", uniqueName: "unique Kaiser Fist", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Rune Staff", baseItemType: "weapon", uniqueName: "unique Rune Staff", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Thresher", baseItemType: "weapon", uniqueName: "unique Thresher", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Yari", baseItemType: "weapon", uniqueName: "unique Yari", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Battle Crossbow", baseItemType: "weapon", uniqueName: "unique Battle Crossbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Kunai", baseItemType: "weapon", uniqueName: "unique Kunai", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Composite Bow", baseItemType: "weapon", uniqueName: "unique Composite Bow", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Hand Trebuchet", baseItemType: "weapon", uniqueName: "unique Hand Trebuchet", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Tabar", baseItemType: "weapon", uniqueName: "unique Tabar", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Scorpion Flail", baseItemType: "weapon", uniqueName: "unique Scorpion Flail", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Kwan Dao", baseItemType: "weapon", uniqueName: "unique Kwan Dao", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Gothic Axe", baseItemType: "weapon", uniqueName: "unique Gothic Axe", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Zweihander", baseItemType: "weapon", uniqueName: "unique Zweihander", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Bec de Corbin", baseItemType: "weapon", uniqueName: "unique Bec de Corbin", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Spetum", baseItemType: "weapon", uniqueName: "unique Spetum", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Bastard Sword", baseItemType: "weapon", uniqueName: "unique Bastard Sword", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Driver", baseItemType: "weapon", uniqueName: "unique Driver", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Devil Star", baseItemType: "weapon", uniqueName: "unique Devil Star", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Guisarme", baseItemType: "weapon", uniqueName: "unique Guisarme", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Epee", baseItemType: "weapon", uniqueName: "unique Epee", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Falchion", baseItemType: "weapon", uniqueName: "unique Falchion", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Grimm", baseItemType: "weapon", uniqueName: "unique Grimm", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Tulwar", baseItemType: "weapon", uniqueName: "unique Tulwar", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "War Fork", baseItemType: "weapon", uniqueName: "unique War Fork", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Skullcracker", baseItemType: "weapon", uniqueName: "unique Skullcracker", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Mattock", baseItemType: "weapon", uniqueName: "unique Mattock", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Scourge", baseItemType: "weapon", uniqueName: "unique Scourge", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Sumpitan", baseItemType: "weapon", uniqueName: "unique Sumpitan", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Bolt Pistol", baseItemType: "weapon", uniqueName: "unique Bolt Pistol", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Colossus Crossbow", baseItemType: "weapon", uniqueName: "unique Colossus Crossbow", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Siege Bow", baseItemType: "weapon", uniqueName: "unique Siege Bow", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+
+{baseItem: "Sandals", baseItemType: "armor", uniqueName: "unique Sandals", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Shoes", baseItemType: "armor", uniqueName: "unique Shoes", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Leather Boots", baseItemType: "armor", uniqueName: "unique Leather Boots", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Sash", baseItemType: "armor", uniqueName: "unique Sash", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Belt", baseItemType: "armor", uniqueName: "unique Belt", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Leather Gloves", baseItemType: "armor", uniqueName: "unique Leather Gloves", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Heavy Leather Gloves", baseItemType: "armor", uniqueName: "unique Heavy Leather Gloves", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Leather Cap", baseItemType: "armor", uniqueName: "unique Leather Cap", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Skull Helmet", baseItemType: "armor", uniqueName: "unique Skull Helmet", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Buckler", baseItemType: "armor", uniqueName: "unique Buckler", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Shield", baseItemType: "armor", uniqueName: "unique Shield", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Cloak", baseItemType: "armor", uniqueName: "unique Cloak", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Cape", baseItemType: "armor", uniqueName: "unique Cape", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Quilted Armor", baseItemType: "armor", uniqueName: "unique Quilted Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Gambeson", baseItemType: "armor", uniqueName: "unique Gambeson", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Padded Armor", baseItemType: "armor", uniqueName: "unique Padded Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Leather Armor", baseItemType: "armor", uniqueName: "unique Leather Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Sudded Leather Armor", baseItemType: "armor", uniqueName: "unique Sudded Leather Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Hide Armor", baseItemType: "armor", uniqueName: "unique Hide Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Chain Shirt", baseItemType: "armor", uniqueName: "unique Chain Shirt", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Chain Mail", baseItemType: "armor", uniqueName: "unique Chain Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 1, weight: 10},
+{baseItem: "Ring", baseItemType: "armor", uniqueName: "unique Ring", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Amulet", baseItemType: "armor", uniqueName: "unique Amulet", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Heavy Leather Boots", baseItemType: "armor", uniqueName: "unique Heavy Leather Boots", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Chain Boots", baseItemType: "armor", uniqueName: "unique Chain Boots", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Heavy Leather Belt", baseItemType: "armor", uniqueName: "unique Heavy Leather Belt", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Vambrace", baseItemType: "armor", uniqueName: "unique Vambrace", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Chain Gloves", baseItemType: "armor", uniqueName: "unique Chain Gloves", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Bone Mask", baseItemType: "armor", uniqueName: "unique Bone Mask", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Crown", baseItemType: "armor", uniqueName: "unique Crown", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Full Helm", baseItemType: "armor", uniqueName: "unique Full Helm", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Kite Shield", baseItemType: "armor", uniqueName: "unique Kite Shield", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Large Shield", baseItemType: "armor", uniqueName: "unique Large Shield", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Hardened Leather Armor", baseItemType: "armor", uniqueName: "unique Hardened Leather Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Serpentskin Armor", baseItemType: "armor", uniqueName: "unique Serpentskin Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Breast Plate", baseItemType: "armor", uniqueName: "unique Breast Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Cuirass", baseItemType: "armor", uniqueName: "unique Cuirass", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Field Plate", baseItemType: "armor", uniqueName: "unique Field Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Scale Mail", baseItemType: "armor", uniqueName: "unique Scale Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Ring Mail", baseItemType: "armor", uniqueName: "unique Ring Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Wyrmhide Armor", baseItemType: "armor", uniqueName: "unique Wyrmhide Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Splint Mail", baseItemType: "armor", uniqueName: "unique Splint Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 2, weight: 10},
+{baseItem: "Light Plate Boots", baseItemType: "armor", uniqueName: "unique Light Plate Boots", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Greaves", baseItemType: "armor", uniqueName: "unique Greaves", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Mithril Coil", baseItemType: "armor", uniqueName: "unique Mithril Coil", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Plated Belt", baseItemType: "armor", uniqueName: "unique Plated Belt", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Light Plate Gloves", baseItemType: "armor", uniqueName: "unique Light Plate Gloves", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Diadem", baseItemType: "armor", uniqueName: "unique Diadem", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Circlet", baseItemType: "armor", uniqueName: "unique Circlet", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Great Helm", baseItemType: "armor", uniqueName: "unique Great Helm", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Tower Shield", baseItemType: "armor", uniqueName: "unique Tower Shield", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Shroud", baseItemType: "armor", uniqueName: "unique Shroud", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Grand Robe", baseItemType: "armor", uniqueName: "unique Grand Robe", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Light Plate", baseItemType: "armor", uniqueName: "unique Light Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Half Plate", baseItemType: "armor", uniqueName: "unique Half Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Demonhide Armor", baseItemType: "armor", uniqueName: "unique Demonhide Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Archon Plate", baseItemType: "armor", uniqueName: "unique Archon Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Mesh Armor", baseItemType: "armor", uniqueName: "unique Mesh Armor", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Tigulated Mail", baseItemType: "armor", uniqueName: "unique Tigulated Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Full Plate Mail", baseItemType: "armor", uniqueName: "unique Full Plate Mail", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Ancient Plate", baseItemType: "armor", uniqueName: "unique Ancient Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 3, weight: 10},
+{baseItem: "Plate Gauntlets", baseItemType: "armor", uniqueName: "unique Plate Gauntlets", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Armet", baseItemType: "armor", uniqueName: "unique Armet", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Gothic Shield", baseItemType: "armor", uniqueName: "unique Gothic Shield", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Aegis", baseItemType: "armor", uniqueName: "unique Aegis", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Gothic Plate", baseItemType: "armor", uniqueName: "unique Gothic Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+{baseItem: "Templar Plate", baseItemType: "armor", uniqueName: "unique Templar Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
+];
 
