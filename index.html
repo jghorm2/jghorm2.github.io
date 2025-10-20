@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enter the Catacombs - Loot Generator</title>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="etcv2.css">
 </head>
 <body>
     <div class="container">
@@ -21,6 +21,8 @@
             <button class="tab-btn" onclick="openTab(event, 'suffixes')">Suffixes</button>
 			<button class="tab-btn" onclick="openTab(event, 'curses')">Curses</button>
             <button class="tab-btn" onclick="openTab(event, 'rule-adjustments')">EtC Rule Changes</button>
+            <button class="tab-btn" onclick="openTab(event, 'prowess-features')">Prowess Features</button>
+            
         </div>
 
         <div class="tab-content">
@@ -353,6 +355,23 @@
                 </div>
             </div>
 
+            <!-- prowess Tab -->
+            <div id="prowess-features" class="tab-pane">
+                <div class="table-wrapper">
+               <table class="data-table" id="prowess-features-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Bonus</th>
+                            <th>Gear Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div> 
             <!-- rule-adjustments Tab -->
             <div id="rule-adjustments" class="tab-pane">
                 <div class="rule-adjustments-section">
@@ -360,40 +379,41 @@
 <h2>Character Creation</h2>
 <h3>Ability Scores</h3>
 <span class="term">At level 1</span><br>
-&nbsp;&nbsp;• Start with 6 ability scores of <i><b>10, 10, 10, 10, 8, 8,</b></i> that can be assigned to any score.<br>
-&nbsp;&nbsp;• You then have <i><b>14</b></i> points you can distribute in any combination, with only 1 score allowed to reach 17.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: values are not weighted as you ascend, as with traditional point buy systems).</i><br>
-&nbsp;&nbsp;• You do not get an ancestry or background boost to your ability scores.<br>
+    &nbsp;&nbsp;• Start with 6 ability scores of <i><b>10, 10, 10, 10, 8, 8,</b></i> that can be assigned to any score.<br>
+    &nbsp;&nbsp;• You then have <i><b>14</b></i> points you can distribute in any combination, with only 1 score allowed to reach 17.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: values are not weighted as you ascend, as with traditional point buy systems).</i><br>
+    &nbsp;&nbsp;• You do not get an ancestry or background boost to your ability scores.<br>
 <br>
 <span class="term">Leveling up</span><br>
-&nbsp;&nbsp;• You gain <i><b>1</b></i> ability point to assign as you wish at every level.<br>
-&nbsp;&nbsp;• At levels where your class would normally receive an ability score increase, you instead choose a feat.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: D&D5.24 has the "Ability Score Improvement" feat, where you would then gain 3 ability points that level)</i>
+    &nbsp;&nbsp;• You gain <i><b>1</b></i> ability point to assign as you wish at every level.<br>
+    &nbsp;&nbsp;• At levels where your class would normally receive an ability score increase, you instead choose a feat.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: D&D5.24 has the "Ability Score Improvement" feat, where you would then gain 3 ability points that level)</i>
 <br><br>
 <span class="term">Hit Point Calculation</span><br>
-&nbsp;&nbsp;• At level 1:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Score + Class hit die max"</b></i>,<br>
-&nbsp;&nbsp;• Subsequent levels:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Modifier + Class hit die rolled"</b></i>.<br>
-&nbsp;&nbsp;• Rolled 1's on hit dice are counted as 2.
+    &nbsp;&nbsp;• At level 1:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Score + Class hit die max"</b></i>,<br>
+    &nbsp;&nbsp;• Subsequent levels:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Modifier + Class hit die rolled"</b></i>.<br>
+    &nbsp;&nbsp;• Rolled 1's on hit dice are counted as 2.
 <br><br>
 
 <h2>Stats & Proficiency</h2>
 <h3> Using and Equiping Gear</h3>
-&nbsp;&nbsp;• A character can use an item if they have:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>proficiency</b> or<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>ability score</b>(s).<br>
-&nbsp;&nbsp;• If the character has both, they gain the item’s <b>Prowess Bonus</b>, an extra benefit tied to that weapon or armor.<br>
-&nbsp;&nbsp;• All pieces of gear will have an ability score requirement, listed on their respective gear table.
+    &nbsp;&nbsp;• A character can effectively utilyze an item if they have:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>proficiency</b> or<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>ability score</b>(s).<br>
+    &nbsp;&nbsp;• If the character has both, they gain the item’s <b>Prowess Bonus</b>, an extra benefit tied to that weapon or armor.<br>
+    &nbsp;&nbsp;• All pieces of gear will have an ability score requirement, listed on their respective gear table.
 <br><br>
 
 <h3>Unmet Requirements Penalties</h3>
-&nbsp;&nbsp;• You can equip armor and weapons without meeting requirements.<br>
-&nbsp;&nbsp;• Weapons do not gain proficiency bonus in attack rolls, but can be used in all other ways.<br>
-&nbsp;&nbsp;• Armors grant AC bonuses, but while wearing it, you have<br> 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Disadvantage on attack rolls<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Target creatures have advantage on spell saves against spells you cast.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Depending on the armor type, you may suffer an additional armor penalty.
+    &nbsp;&nbsp;• You can equip armor and weapons without meeting requirements.<br>
+    &nbsp;&nbsp;• Weapons do not gain proficiency bonus in attack rolls, but can be used in all other ways.<br>
+    &nbsp;&nbsp;• Armors grant AC bonuses, but while wearing it, you have<br> 
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Disadvantage on attack rolls<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Target creatures have advantage on spell saves against spells you cast.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Depending on the armor type, you may suffer an additional armor penalty.<br>
+    &nbsp;&nbsp;• If you do not have either the proficiency or the required abilty scores, you <b>still gain the enchantment properties from equipped gear</b>.<br>
 <br><br>
 
 <h3>Additional Armor Penalty per type:</h3>
@@ -404,44 +424,81 @@
 
 <h2>Armor Points and AC</h2>
 <h3>Base AC</h3>
-&nbsp;&nbsp;• Characters’ unarmored AC calculation starts at<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i><b>8 + Dex modifier (min 0) instead of 10 + Dex mod.</b></i>,<br><br>
+    &nbsp;&nbsp;• Characters’ unarmored AC calculation starts at<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i><b>8 + Dex modifier (min 0) instead of 10 + Dex mod.</b></i>,<br><br>
 
 <h3>Torso Armor</h3>
-&nbsp;&nbsp;• Takes the place of the 5E armors, and allows only 1 torso piece equipped.<br><br>
+    &nbsp;&nbsp;• Takes the place of the 5E armors, and allows only 1 torso piece equipped.<br><br>
 
 <h3>Accoutrement Armor</h3>
-&nbsp;&nbsp;• Each character has 4 Accoutrement Armor slots:<br>
-<i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Head<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Hands<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Waist<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Feet<br></i>
-&nbsp;&nbsp;• Equipping a piece of gear in these slots grants <i><b>+½ AC</b> (round down after adding all sources).</i>,<br><br>
+    &nbsp;&nbsp;• Each character has 4 Accoutrement Armor slots:<br>
+    <i> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Head<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Hands<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Waist<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Feet<br></i>
+    &nbsp;&nbsp;• Equipping a piece of gear in these slots grants <i><b>+½ AC</b> (round down after adding all sources).</i>,<br><br>
 
 
 <h3>Armor Points (AP)</h3>
-&nbsp;&nbsp;• A separate pool of expendable hit points.<br>
-&nbsp;&nbsp;• Refreshes at the start of each combat.<br>
-&nbsp;&nbsp;• Typically granted by gear.<br>
-&nbsp;&nbsp;• Distinct from HP and Temporary HP.<br><br>
+    &nbsp;&nbsp;• A separate pool of expendable hit points.<br>
+    &nbsp;&nbsp;• Refreshes at the start of each combat.<br>
+    &nbsp;&nbsp;• Typically granted by gear.<br>
+    &nbsp;&nbsp;• Distinct from HP and Temporary HP.<br><br>
 
 <h2>Spellcasting</h2>
 <h3>Everyone's a Caster</h3>
-&nbsp;&nbsp;• Any player character can read any spell scroll or read a spell Book.<br>
-&nbsp;&nbsp;• If a character cannot normally cast the spell in the scroll or book, they must make a spell casting check.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<b>Spell Casting Check:</b><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>DC = "10 + the Spell's Level"</b></i>.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>Check = "1d20 + Spellcasting Modifier"</b></i>.<br>
-&nbsp;&nbsp;• If the character does not have a Spellcasting Modifier already, they will use their Intelligence modifier.<br>
-&nbsp;&nbsp;• If a character learns a spell, but does not have a natural pool of Spell Points large enough to cast it, they increase their SP to the casting cost of the new spell.
+    &nbsp;&nbsp;• Any player character can read any spell scroll or read a spell Book.<br>
+    &nbsp;&nbsp;• If a character cannot normally cast the spell in the scroll or book, they must make a spell casting check.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<b>Spell Casting Check:</b><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>DC = "10 + the Spell's Level"</b></i>.<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>Check = "1d20 + Spellcasting Modifier"</b></i>.<br>
+    &nbsp;&nbsp;• If the character does not have a Spellcasting Modifier already, they will use their Intelligence modifier.<br>
+    &nbsp;&nbsp;• If a character learns a spell, but does not have a natural pool of Spell Points large enough to cast it, they increase their SP to the casting cost of the new spell.
 <br><br>
 <h3>Spell Points (SP)</h3>
-&nbsp;&nbsp;• Instead of spell slots, casters have a pool of spell points.<br> 
-&nbsp;&nbsp;• Each spell level costs a set number of points to cast.<br>
-&nbsp;&nbsp;• Points refresh on a long rest.<br>
-&nbsp;&nbsp;• Sorcerers or other classes that gain access to “Sorcery Points” can add those points into their Spell Point total.<br><br>
+    &nbsp;&nbsp;• Instead of spell slots, casters have a pool of spell points.<br> 
+    &nbsp;&nbsp;• Each spell level costs a set number of points to cast.<br>
+    &nbsp;&nbsp;• Points refresh on a long rest.<br>
+    &nbsp;&nbsp;• Sorcerers or other classes that gain access to “Sorcery Points” can add those points into their Spell Point total.<br>
+    &nbsp;&nbsp;• Warlocks regain their warlock spell points during a short or long rest.<br>
+    &nbsp;&nbsp;• Half Casters, such as Paladins and Rangers, and Third Casters, such as Eldritch Knights and Trickster Rogues, are both included below.<br><br>
     <div class="info-table">
-        <!-- Spell Point Costs -->
+        <!-- Spell Point Pools -->
+        <table cellpadding="0">
+            <caption><strong>Spell Point Pools</strong></caption>
+            <tr>
+                <th>Level</th>
+                <th>Full Caster</th>
+                <th>Half Caster</th>
+                <th>Third Caster</th>
+                <th>Sorcerer</th>
+                <th>Warlock</th>
+            </tr>
+
+                <tr><td>1st</td><td>4</td><td>0</td><td>0</td><td>4</td><td>2</td></tr>
+                <tr><td>2nd</td><td>6</td><td>4</td><td>0</td><td>8</td><td>4</td></tr>
+                <tr><td>3rd</td><td>14</td><td>6</td><td>4</td><td>17</td><td>6</td></tr>
+                <tr><td>4th</td><td>17</td><td>6</td><td>6</td><td>21</td><td>6</td></tr>
+                <tr><td>5th</td><td>27</td><td>14</td><td>6</td><td>32</td><td>10</td></tr>
+                <tr><td>6th</td><td>32</td><td>14</td><td>6</td><td>38</td><td>10</td></tr>
+                <tr><td>7th</td><td>38</td><td>17</td><td>14</td><td>45</td><td>12</td></tr>
+                <tr><td>8th</td><td>44</td><td>17</td><td>14</td><td>52</td><td>12</td></tr>
+                <tr><td>9th</td><td>57</td><td>27</td><td>14</td><td>66</td><td>14</td></tr>
+                <tr><td>10th</td><td>64</td><td>27</td><td>17</td><td>74</td><td>14</td></tr>
+                <tr><td>11th</td><td>73</td><td>32</td><td>17</td><td>84</td><td>21</td></tr>
+                <tr><td>12th</td><td>73</td><td>32</td><td>17</td><td>85</td><td>21</td></tr>
+                <tr><td>13th</td><td>83</td><td>38</td><td>27</td><td>96</td><td>21</td></tr>
+                <tr><td>14th</td><td>83</td><td>38</td><td>27</td><td>97</td><td>21</td></tr>
+                <tr><td>15th</td><td>94</td><td>44</td><td>27</td><td>109</td><td>21</td></tr>
+                <tr><td>16th</td><td>94</td><td>44</td><td>32</td><td>110</td><td>21</td></tr>
+                <tr><td>17th</td><td>107</td><td>57</td><td>32</td><td>124</td><td>28</td></tr>
+                <tr><td>18th</td><td>114</td><td>57</td><td>32</td><td>132</td><td>28</td></tr>
+                <tr><td>19th</td><td>123</td><td>64</td><td>38</td><td>142</td><td>28</td></tr>
+                <tr><td>20th</td><td>133</td><td>64</td><td>38</td><td>153</td><td>28</td></tr>
+        </table>
+    </div>
+                <!-- Spell Point Costs -->
+    <div class="info-table">
         <table cellpadding="0">
             <caption><strong>Spell Point Costs</strong></caption>
             <tr>
@@ -457,72 +514,79 @@
             <tr><td>7th</td><td>10</td></tr>
             <tr><td>8th</td><td>11</td></tr>
             <tr><td>9th</td><td>13</td></tr>
-        </table>
-        
-        <!-- Spell Point Pool (Levels 1-10) -->
-        <table cellpadding="0">
-            <caption><strong>Spell Point Pool (1-10)</strong></caption>
-            <tr>
-                <th>Level</th>
-                <th>SP Pool</th>
-            </tr>
-            <tr><td>1st</td><td>4</td></tr>
-            <tr><td>2nd</td><td>6</td></tr>
-            <tr><td>3rd</td><td>14</td></tr>
-            <tr><td>4th</td><td>17</td></tr>
-            <tr><td>5th</td><td>27</td></tr>
-            <tr><td>6th</td><td>32</td></tr>
-            <tr><td>7th</td><td>38</td></tr>
-            <tr><td>8th</td><td>44</td></tr>
-            <tr><td>9th</td><td>57</td></tr>
-            <tr><td>10th</td><td>64</td></tr>
-        </table>
-        
-        <!-- Spell Point Pool (Levels 11-20) -->
-        <table cellpadding="0">
-            <caption><strong>Spell Point Pool (11-20)</strong></caption>
-            <tr>
-                <th>Level</th>
-                <th>SP Pool</th>
-            </tr>
-            <tr><td>11th</td><td>73</td></tr>
-            <tr><td>12th</td><td>73</td></tr>
-            <tr><td>13th</td><td>83</td></tr>
-            <tr><td>14th</td><td>83</td></tr>
-            <tr><td>15th</td><td>94</td></tr>
-            <tr><td>16th</td><td>94</td></tr>
-            <tr><td>17th</td><td>107</td></tr>
-            <tr><td>18th</td><td>114</td></tr>
-            <tr><td>19th</td><td>123</td></tr>
-            <tr><td>20th</td><td>133</td></tr>
-        </table>
+        </table> 
     </div>
 <br>
-<h2>Healing and Resting</h2>
+<h2>Healing, Potions, and Resting</h2>
 <h3>Healing Surges</h3>
-&nbsp;&nbsp;• Healing Surges are a percentage based healing based around your total hit points. 1 Healing Surge is one quarter of your total hit points, rounded down.<br><br>
+    &nbsp;&nbsp;• Healing Surges are a percentage based healing based around your total hit points. 1 Healing Surge is one quarter of your total hit points, rounded down.<br>
+    &nbsp;&nbsp;• Characters <i><b>have 3 + Constitution Modifier (minimum 0)</i></b> Healing Surges per day.<br>
+<h3>Healing With Potions</h3>
+    &nbsp;&nbsp;• Drinking a Potion of any kind (regardless of the potion size) expends one Healing Surge.<br>
+    &nbsp;&nbsp;• Drinking a healing potion without any Healing Surges restores hit points equal to your level, regardless of the potion's size.<br>
 <h3>Short and Long Rests</h3>
-&nbsp;&nbsp;• When taking a long rest, you must sleep in town. The cost of a night at the in is <b>50gp × your character level</b>.<br>
-&nbsp;&nbsp;• Resting in the dungeon will always count as a short rest, regardless if you rest longer.<br><br>
+    &nbsp;&nbsp;• When taking a long rest, you must sleep in town. The cost of a night at the in is <b>50gp × your character level</b>.<br>
+    &nbsp;&nbsp;• Resting in the dungeon will always count as a short rest, regardless if you rest longer.<br>
+    &nbsp;&nbsp;• When taking a Short Rest, characters can expend any healing surges they currently have to regain healh.<br><br>
 
 <h2>Exploration</h2>
 <h3>Light</h3>
-&nbsp;&nbsp;• Light levels from D&D5E sources are all halved.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 1: If you have 60' of darkvision, in EtC you have 30' instead.</i><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 2: A torch that sheds 20' of bright light and 20' of dim light, will instead shed 10' and 10', respectively.</i><br><br>
+    &nbsp;&nbsp;• Light levels from D&D5E sources are all halved.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 1: If you have 60' of darkvision, in EtC you have 30' instead.</i><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 2: A torch that sheds 20' of bright light and 20' of dim light, will instead shed 10' and 10', respectively.</i><br><br>
 <h3>Loot</h3>
 <span class="term">&nbsp;&nbsp;Loot Roll:</span> A single roll using the Enter the Catacombs Loot Roller.<br>
-&nbsp;&nbsp;• For every monster defeated, you gain 1 Loot Roll.<br>
-&nbsp;&nbsp;• For every chest, barrel, or other container you search, you gain 1 Loot Roll.<br>
-&nbsp;&nbsp;• Looting bodies takes time. For every 5 Loot Rolls, you must spend 1 uninterrupted minute looting the area.<br><br>
+    &nbsp;&nbsp;• For every monster defeated, you gain 1 Loot Roll.<br>
+    &nbsp;&nbsp;• For every chest, barrel, or other container you search, you gain 1 Loot Roll.<br>
+    &nbsp;&nbsp;• Looting bodies takes time. For every 5 Loot Rolls, you must spend 1 uninterrupted minute looting the area.<br><br>
 <h3>Buying and Selling Gear</h3>
-&nbsp;&nbsp;• When selling an item to a town vendor, you gain GP equal to the item's value.<br>
-&nbsp;&nbsp;• Town vendors generate 5 enchanted items per long rest.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(The tier should be calculated as twice the current dungeon level, instead of "dungeon level + character level".)</i><br>
-&nbsp;&nbsp;• Town vendors sell their gear at 4× the item's value.
+    &nbsp;&nbsp;• When selling an item to a town vendor, you gain GP equal to the item's value.<br>
+    &nbsp;&nbsp;• Town vendors generate 5 enchanted items per long rest.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(The tier should be calculated as twice the current dungeon level, instead of "dungeon level + character level".)</i><br>
+    &nbsp;&nbsp;• Town vendors sell their gear at 4× the item's value.
+<br><br>
+<h2>Combat</h2>
+<h3>New Mechanics</h3>
+    &nbsp;&nbsp;<span class="term">Hit Ranges</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;When you make an attack, compare your total attack roll to the target’s Defense (DC or AC):<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Major Hit: Your attack roll exceeds the target’s Defense by 10 or more.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Standard Hit: Your attack roll exceeds the target’s Defense by 1 to 9.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Minor Hit: Your attack roll misses by 5 or less.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Miss: Your attack roll misses by 6 or more.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Refer to the following chart for different hit ranges and their effects.<br>
+    <div class="info-table">
+                <table cellpadding="0">
+            <tr>
+                <th>Attack vs AC</th>
+                <th>Hit Type</th>
+                <th>Effect</th>
+                <th>Example</th>
+            </tr>
+            <tr><td> 10 or more above<br>(&ge;+10)</td><td>Major Hit</td><td>Your regular, non-critical damage dice are maximized.</td><td>A longsword (+6) attack result of 25, target AC of 14. 19 Damage.</td></tr>
+            <tr><td> Matching up to 9 above<br>(+0 - +9)</td><td>Standard Hit</td><td>Damage Rolls made with listed dice.</td><td>A longsword attack (+6) result of 22, target AC of 14. 1d8+5+1d6 Damage.</td></tr>
+            <tr><td> 5 to 1 below<br>(-5 - -1)</td><td>Minor Hit</td><td>Deal Glancing Damage.</td><td>A longsword attack (+6) result of 13, target AC of 14. 1d8 Damage.</td></tr>
+            <tr><td> 6 or more below<br>(&le;-6)</td><td>Miss</td><td>The attack has no effect.</td><td>A longsword attack (+6) result of 8, target AC of 14. 0 Damage.</td></tr>
+        </table>
+    </div><br>
+
+    &nbsp;&nbsp;<span class="term">Save Ends</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Effects with a status listed until "Save Ends", occur until a creature makes their save.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Unless specified, saves against ongoing effects occur at the end of a turn.<br>
+    &nbsp;&nbsp;<span class="term">Shift</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Use your move action to move 5 feet. This movement does not provoke opportunity attacks.<br><br>
+
+<h3>Terminology</h3>
+    &nbsp;&nbsp;<span class="term">Glancing Damage</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Deal your weapon's base damage dice, without any any modifiers or additions.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Does not count as "hitting" with a weapon attack.<br>
+            &nbsp;&nbsp;<span class="term">Bloodied</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A creature with less than half of their total Hit Points is considered "Bloodied".<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Certain effects can occur when a creature becomes bloodied, or whether they are or are not bloodied.<br>
+
+
             </div>
         </div>
     </div>
-<script src="index.js"></script>
+<script src="etcv2.js"></script>
 </body>
 </html>

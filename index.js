@@ -526,9 +526,12 @@ function displayResults(results) {
             const spellsTableBody = document.querySelector('#spells-table tbody');
             spellTable.forEach(item => {
                 const row = spellsTableBody.insertRow();
+                const nameCell = item.link ? 
+                    `<a href="${item.link}" target="_blank" class="table-spell-link">${item.name}</a>` : 
+                    item.name;
                 row.innerHTML = `
                     <td>${item.spellLevel}</td>
-                    <td>${item.name}</td>
+                    <td>${nameCell}</td>
                     <td>${item.value}</td>
                 `;
             });
@@ -577,6 +580,17 @@ function displayResults(results) {
                     <td>${item.property}</td>
                 `;
             });
+
+            // Cursed suffixes table
+            const prowessTableBody = document.querySelector('#prowess-features-table tbody');
+            prowessTable.forEach(item => {
+                const row = prowessTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.prowessName}</td>
+                    <td>${item.prowessFeature}</td>
+                    <td>${item.prowessGearType}</td>
+                `;
+            });           
 
             // Make all tables sortable
             initializeTableSorting();
@@ -1267,98 +1281,114 @@ function openDetailPane(name, properties, value, itemType, details) {
                 <div class="detail-section">
                     <h3 class="section-title">${name}</h3>
                     <p>${properties}</p>
-                    ${spell && spell.link ? `<p><a href="${spell.link}" target="_blank" class="spell-link">View Spell Details →</a></p>` : ''}
+                    ${spell && spell.link ? `<p><a href="${spell.link}" target="_blank" class="spell-link">View Spell Details on dnd5e.com</a></p>` : ''}
                 </div>
             </div>
         `;
-    } else if (itemType === 'gear') {
-        const isUnique = details && details.isUnique;
-        const isRare = details && details.isRare;
-        const baseItemRef = details && details.baseItemRef;
-        const baseItemType = details && details.baseItemType;
-        const affixes = details && details.affixes;
-        
-        let baseItem = null;
-        if (baseItemRef !== undefined && baseItemType) {
-            baseItem = baseItemType === 'weapon' ? weaponTable[baseItemRef] : armorTable[baseItemRef];
-        }
-        
-        const headerTitle = isUnique ? 'Unique Item' : (baseItemType === 'weapon' ? 'Weapon' : baseItemType === 'armor' ? 'Armor' : 'Gear');
-        
-        content = `
-            <div class="detail-header ${isUnique ? 'unique-header' : ''}">
-                <h2>${headerTitle}</h2>
-                <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+} else if (itemType === 'gear') {
+    const isUnique = details && details.isUnique;
+    const isRare = details && details.isRare;
+    const baseItemRef = details && details.baseItemRef;
+    const baseItemType = details && details.baseItemType;
+    const affixes = details && details.affixes;
+    
+    let baseItem = null;
+    if (baseItemRef !== undefined && baseItemType) {
+        baseItem = baseItemType === 'weapon' ? weaponTable[baseItemRef] : armorTable[baseItemRef];
+    }
+    
+    const headerTitle = isUnique ? 'Unique Item' : (baseItemType === 'weapon' ? 'Weapon' : baseItemType === 'armor' ? 'Armor' : 'Gear');
+    
+    content = `
+        <div class="detail-header ${isUnique ? 'unique-header' : ''}">
+            <h2>${headerTitle}</h2>
+            <button class="close-detail-btn" onclick="closeDetailPane()">&times;</button>
+        </div>
+        <div class="detail-body">
+            <div class="detail-section">
+                <h3 class="section-title ${isUnique ? 'unique-title' : ''}">${name.replace(/<br>/g, ' ')}</h3>
             </div>
-            <div class="detail-body">
-                <div class="detail-section">
-                    <h3 class="section-title ${isUnique ? 'unique-title' : ''}">${name.replace(/<br>/g, ' ')}</h3>
-                </div>
-        `;
+    `;
+    
+    // Display base item stats
+    if (baseItem) {
+        content += '<div class="detail-section"><h4 class="subsection-title" style="color: #ffffffff;">Base Stats</h4>';
         
-        // Display base item stats
-        if (baseItem) {
-            content += '<div class="detail-section"><h4 class="subsection-title">Base Stats</h4>';
-            
-            if (baseItemType === 'weapon') {
-                content += `
-                    ${baseItem.quality ? `<p><strong>Quality:</strong> ${baseItem.quality}</p>` : ''}
-                    <p><strong>Class:</strong> ${baseItem.class}</p>
-                    <p><strong>Damage:</strong> ${baseItem.damage}</p>
-                    ${baseItem.weaponProperties && baseItem.weaponProperties !== '-' ? `<p><strong>Properties:</strong> ${baseItem.weaponProperties}</p>` : ''}
-                    <p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>
-                    ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
-                    ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
-                    ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess Bonus:</strong> ${baseItem.prowessBonus}</p>` : ''}
-                `;
-            } else if (baseItemType === 'armor') {
-                content += `
-                    <p><strong>Class:</strong> ${baseItem.class}</p>
-                    ${baseItem.armorClass && baseItem.armorClass !== '-' ? `<p><strong>Armor Class:</strong> ${baseItem.armorClass}</p>` : ''}
-                    ${baseItem.dexMax && baseItem.dexMax !== '-' ? `<p><strong>Dex Max:</strong> ${baseItem.dexMax}</p>` : ''}
-                    ${baseItem.proficiency && baseItem.proficiency !== '-' ? `<p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>` : ''}
-                    ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
-                    ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
-                    ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess Bonus:</strong> ${baseItem.prowessBonus}</p>` : ''}
-                `;
-            }
-            
-            content += '</div>';
-        }
-        
-        // Display unique properties or affixes
-        if (isUnique && details.uniqueData) {
-            content += '<div class="detail-section"><h4 class="subsection-title">Unique Properties</h4>';
-            details.uniqueData.properties.forEach(prop => {
-                content += `
-                    <div class="unique-property">
-                        <p>${prop}</p>
-                    </div>
-                `;
-            });
-            content += '</div>';
-        } else if (affixes && affixes.length > 0) {
-            content += '<div class="detail-section"><h4 class="subsection-title">Magical Properties</h4>';
-            affixes.forEach(affix => {
-                content += `
-                    <div class="affix-detail">
-                        <p class="affix-name"><strong>${affix.name}${affix.isCursed ? ' (Cursed)' : ''}</strong></p>
-                        <p class="affix-property">${affix.property}</p>
-                    </div>
-                `;
-            });
-            content += '</div>';
-        } else if (properties && properties.trim() !== '') {
+        if (baseItemType === 'weapon') {
             content += `
-                <div class="detail-section">
-                    <h4 class="subsection-title">Properties</h4>
-                    <div class="properties-text">${properties}</div>
-                </div>
+                ${baseItem.quality ? `<p><strong>Quality:</strong> ${baseItem.quality}</p>` : ''}
+                <p><strong>Class:</strong> ${baseItem.class}</p>
+                <p><strong>Damage:</strong> ${baseItem.damage}</p>
+                ${baseItem.weaponProperties && baseItem.weaponProperties !== '-' ? `<p><strong>Properties:</strong> ${baseItem.weaponProperties}</p>` : ''}
+                <p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>
+                ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
+                ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
+                ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess:</strong> ${baseItem.prowessBonus}</p>` : ''}
+            `;
+        } else if (baseItemType === 'armor') {
+            content += `
+                <p><strong>Class:</strong> ${baseItem.class}</p>
+                ${baseItem.armorClass && baseItem.armorClass !== '-' ? `<p><strong>Armor Class:</strong> ${baseItem.armorClass}</p>` : ''}
+                ${baseItem.dexMax && baseItem.dexMax !== '-' ? `<p><strong>Dex Max:</strong> ${baseItem.dexMax}</p>` : ''}
+                ${baseItem.proficiency && baseItem.proficiency !== '-' ? `<p><strong>Proficiency:</strong> ${baseItem.proficiency}</p>` : ''}
+                ${baseItem.strReq && baseItem.strReq !== '-' ? `<p><strong>Str Req:</strong> ${baseItem.strReq}</p>` : ''}
+                ${baseItem.dexReq && baseItem.dexReq !== '-' ? `<p><strong>Dex Req:</strong> ${baseItem.dexReq}</p>` : ''}
+                ${baseItem.prowessBonus && baseItem.prowessBonus !== '-' ? `<p><strong>Prowess:</strong> ${baseItem.prowessBonus}</p>` : ''}
             `;
         }
         
         content += '</div>';
+        
+        // Display prowess feature if item has one
+        if (baseItem.prowessBonus && baseItem.prowessBonus !== '-') {
+            const prowessFeature = prowessTable.find(p => p.prowessName === baseItem.prowessBonus);
+            if (prowessFeature) {
+                content += `
+                    <div class="detail-section">
+                        <h4 class="subsection-title" style="color: #ceca95;">Prowess Feature</h4>
+                        <div class="prowess-detail">
+                            <p class="prowess-name"><strong>${prowessFeature.prowessName}</strong></p>
+                            <p class="prowess-feature">${prowessFeature.prowessFeature}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
     }
+    
+    // Display unique properties or affixes
+    if (isUnique && details.uniqueData) {
+        content += '<div class="detail-section"><h4 class="subsection-title">Unique Properties</h4>';
+        details.uniqueData.properties.forEach(prop => {
+            content += `
+                <div class="unique-property">
+                    <p>${prop}</p>
+                </div>
+            `;
+        });
+        content += '</div>';
+    } else if (affixes && affixes.length > 0) {
+        content += '<div class="detail-section"><h4 class="subsection-title">Magical Properties</h4>';
+        affixes.forEach(affix => {
+            content += `
+                <div class="affix-detail">
+                    <p class="affix-name"><strong>${affix.name}${affix.isCursed ? ' (Cursed)' : ''}</strong></p>
+                    <p class="affix-property">${affix.property}</p>
+                </div>
+            `;
+        });
+        content += '</div>';
+    } else if (properties && properties.trim() !== '') {
+        content += `
+            <div class="detail-section">
+                <h4 class="subsection-title">Properties</h4>
+                <div class="properties-text">${properties}</div>
+            </div>
+        `;
+    }
+    
+    content += '</div>';
+}
     
     pane.innerHTML = content;
     pane.classList.add('open');
@@ -1381,276 +1411,276 @@ const potionTable = [
             {tier: 4, name: "Full Rejuvination Potion", property: "Gain the benefits of a Long Rest", action:'Action', value:1200, weight:2},
         ];
 const spellTable = [
-            {name: "Acid Splash", value:10, spellLevel: 0},
-            {name: "Blade Ward", value:10, spellLevel: 0},
-            {name: "Booming Blade", value:10, spellLevel: 0},
-            {name: "Chill Touch", value:10, spellLevel: 0},
-            {name: "Eldritch Blast", value:10, spellLevel: 0},
-            {name: "Fire Bolt", value:10, spellLevel: 0},
-            {name: "Frostbite", value:10, spellLevel: 0},
-            {name: "Green-Flame Blade", value:10, spellLevel: 0},
-            {name: "Guidance", value:10, spellLevel: 0},
-            {name: "Gust", value:10, spellLevel: 0},
-            {name: "Infestation", value:10, spellLevel: 0},
-            {name: "Lightning Lure", value:10, spellLevel: 0},
-            {name: "Mage Hand", value:10, spellLevel: 0},
-            {name: "Magic Stone", value:10, spellLevel: 0},
-            {name: "Mind Sliver", value:10, spellLevel: 0},
-            {name: "Poison Spray", value:10, spellLevel: 0},
-            {name: "Primal Savagery", value:10, spellLevel: 0},
-            {name: "Produce Flame", value:10, spellLevel: 0},
-            {name: "Ray of Frost", value:10, spellLevel: 0},
-            {name: "Sacred Flame", value:10, spellLevel: 0},
-            {name: "Shillelagh", value:10, spellLevel: 0},
-            {name: "Shocking Grasp", value:10, spellLevel: 0},
-            {name: "Spare the Dying", value:10, spellLevel: 0},
-            {name: "Sword Burst", value:10, spellLevel: 0},
-            {name: "Thorn Whip", value:10, spellLevel: 0},
-            {name: "Thunderclap", value:10, spellLevel: 0},
-            {name: "Toll the Dead", value:10, spellLevel: 0},
-            {name: "True Strike", value:10, spellLevel: 0},
-            {name: "Vicious Mockery", value:10, spellLevel: 0},
-            {name: "Word of Radiance", value:10, spellLevel: 0},
-            {name: "Armor of Agathys", value:60, spellLevel: 1},
-            {name: "Arms of Hadar", value:60, spellLevel: 1},
-            {name: "Bane", value:60, spellLevel: 1},
-            {name: "Bless", value:60, spellLevel: 1},
-            {name: "Burning Hands", value:60, spellLevel: 1},
-            {name: "Catapult", value:60, spellLevel: 1},
-            {name: "Chaos Bolt", value:60, spellLevel: 1},
-            {name: "Chromatic Orb", value:60, spellLevel: 1},
-            {name: "Compelled Duel", value:60, spellLevel: 1},
-            {name: "Cure Wounds", value:60, spellLevel: 1},
-            {name: "Detect Magic", value:60, spellLevel: 1},
-            {name: "Detect Poison and Disease", value:60, spellLevel: 1},
-            {name: "Dissonant Whispers", value:60, spellLevel: 1},
-            {name: "Divine Favor", value:60, spellLevel: 1},
-            {name: "Earth Tremor", value:60, spellLevel: 1},
-            {name: "Ensnaring Strike", value:60, spellLevel: 1},
-            {name: "Entangle", value:60, spellLevel: 1},
-            {name: "Expeditious Retreat", value:60, spellLevel: 1},
-            {name: "Faerie Fire", value:60, spellLevel: 1},
-            {name: "False Life", value:60, spellLevel: 1},
-            {name: "Find Familiar", value:60, spellLevel: 1},
-            {name: "Fog Cloud", value:60, spellLevel: 1},
-            {name: "Frost Fingers", value:60, spellLevel: 1},
-            {name: "Gift of Alacrity", value:60, spellLevel: 1},
-            {name: "Goodberry", value:60, spellLevel: 1},
-            {name: "Grease", value:60, spellLevel: 1},
-            {name: "Guiding Bolt", value:60, spellLevel: 1},
-            {name: "Hail of Thorns", value:60, spellLevel: 1},
-            {name: "Healing Word", value:60, spellLevel: 1},
-            {name: "Hellish Rebuke", value:60, spellLevel: 1},
-            {name: "Heroism", value:60, spellLevel: 1},
-            {name: "Hex", value:60, spellLevel: 1},
-            {name: "Hunter's Mark", value:60, spellLevel: 1},
-            {name: "Ice Knife", value:60, spellLevel: 1},
-            {name: "Inflict Wounds", value:60, spellLevel: 1},
-            {name: "Mage Armor", value:60, spellLevel: 1},
-            {name: "Magic Missile", value:60, spellLevel: 1},
-            {name: "Protection from Evil and Good", value:60, spellLevel: 1},
-            {name: "Ray of Sickness", value:60, spellLevel: 1},
-            {name: "Sanctuary", value:60, spellLevel: 1},
-            {name: "Searing Smite", value:60, spellLevel: 1},
-            {name: "Shield", value:60, spellLevel: 1},
-            {name: "Shield of Faith", value:60, spellLevel: 1},
-            {name: "Sleep", value:60, spellLevel: 1},
-            {name: "Tasha's Caustic Brew", value:60, spellLevel: 1},
-            {name: "Tasha's Hideous Laughter", value:60, spellLevel: 1},
-            {name: "Thunderous Smite", value:60, spellLevel: 1},
-            {name: "Thunderwave", value:60, spellLevel: 1},
-            {name: "Wrathful Smite", value:60, spellLevel: 1},
-            {name: "Zephyr Strike", value:60, spellLevel: 1},
-            {name: "Aganazzar's Scorcher", value:120, spellLevel: 2},
-            {name: "Aid", value:120, spellLevel: 2},
-            {name: "Barkskin", value:120, spellLevel: 2},
-            {name: "Blindness/Deafness", value:120, spellLevel: 2},
-            {name: "Blur", value:120, spellLevel: 2},
-            {name: "Branding Smite", value:120, spellLevel: 2},
-            {name: "Calm Emotions", value:120, spellLevel: 2},
-            {name: "Cloud of Daggers", value:120, spellLevel: 2},
-            {name: "Cordon of Arrows", value:120, spellLevel: 2},
-            {name: "Crown of Madness", value:120, spellLevel: 2},
-            {name: "Darkness", value:120, spellLevel: 2},
-            {name: "Darkvision", value:120, spellLevel: 2},
-            {name: "Dragon's Breath", value:120, spellLevel: 2},
-            {name: "Enlarge/Reduce", value:120, spellLevel: 2},
-            {name: "Flame Blade", value:120, spellLevel: 2},
-            {name: "Flaming Sphere", value:120, spellLevel: 2},
-            {name: "Healing Spirit", value:120, spellLevel: 2},
-            {name: "Heat Metal", value:120, spellLevel: 2},
-            {name: "Hold Person", value:120, spellLevel: 2},
-            {name: "Invisibility", value:120, spellLevel: 2},
-            {name: "Kinetic Jaunt", value:120, spellLevel: 2},
-            {name: "Lesser Restoration", value:120, spellLevel: 2},
-            {name: "Magic Weapon", value:120, spellLevel: 2},
-            {name: "Melf's Acid Arrow", value:120, spellLevel: 2},
-            {name: "Mind Spike", value:120, spellLevel: 2},
-            {name: "Mirror Image", value:120, spellLevel: 2},
-            {name: "Misty Step", value:120, spellLevel: 2},
-            {name: "Phantasmal Force", value:120, spellLevel: 2},
-            {name: "Prayer of Healing", value:120, spellLevel: 2},
-            {name: "Pyrotechnics", value:120, spellLevel: 2},
-            {name: "Ray of Enfeeblement", value:120, spellLevel: 2},
-            {name: "Scorching Ray", value:120, spellLevel: 2},
-            {name: "Shadow Blade", value:120, spellLevel: 2},
-            {name: "Shatter", value:120, spellLevel: 2},
-            {name: "Silence", value:120, spellLevel: 2},
-            {name: "Spike Growth", value:120, spellLevel: 2},
-            {name: "Spiritual Weapon", value:120, spellLevel: 2},
-            {name: "Tasha's Mind Whip", value:120, spellLevel: 2},
-            {name: "Web", value:120, spellLevel: 2},
-            {name: "Wither and Bloom", value:120, spellLevel: 2},
-            {name: "Animate Dead", value:200, spellLevel: 3},
-            {name: "Aura of Vitality", value:200, spellLevel: 3},
-            {name: "Beacon of Hope", value:200, spellLevel: 3},
-            {name: "Blinding Smite", value:200, spellLevel: 3},
-            {name: "Blink", value:200, spellLevel: 3},
-            {name: "Conjure Barrage", value:200, spellLevel: 3},
-            {name: "Counterspell", value:200, spellLevel: 3},
-            {name: "Crusader's Mantle", value:200, spellLevel: 3},
-            {name: "Daylight", value:200, spellLevel: 3},
-            {name: "Dispel Magic", value:200, spellLevel: 3},
-            {name: "Elemental Weapon", value:200, spellLevel: 3},
-            {name: "Erupting Earth", value:200, spellLevel: 3},
-            {name: "Fear", value:200, spellLevel: 3},
-            {name: "Fireball", value:200, spellLevel: 3},
-            {name: "Flame Arrows", value:200, spellLevel: 3},
-            {name: "Fly", value:200, spellLevel: 3},
-            {name: "Glyph of Warding", value:200, spellLevel: 3},
-            {name: "Haste", value:200, spellLevel: 3},
-            {name: "Hunger Of Hadar", value:200, spellLevel: 3},
-            {name: "Hypnotic Pattern", value:200, spellLevel: 3},
-            {name: "Intellect Fortress", value:200, spellLevel: 3},
-            {name: "Life Transference", value:200, spellLevel: 3},
-            {name: "Lightning Arrow", value:200, spellLevel: 3},
-            {name: "Lightning Bolt", value:200, spellLevel: 3},
-            {name: "Major Image", value:200, spellLevel: 3},
-            {name: "Mass Healing Word", value:200, spellLevel: 3},
-            {name: "Meld into Stone", value:200, spellLevel: 3},
-            {name: "Melf's Minute Meteors", value:200, spellLevel: 3},
-            {name: "Pulse Wave", value:200, spellLevel: 3},
-            {name: "Remove Curse", value:200, spellLevel: 3},
-            {name: "Revivify", value:200, spellLevel: 3},
-            {name: "Slow", value:200, spellLevel: 3},
-            {name: "Spirit Guardians", value:200, spellLevel: 3},
-            {name: "Summon Lesser Demons", value:200, spellLevel: 3},
-            {name: "Summon Shadowspawn", value:200, spellLevel: 3},
-            {name: "Summon Undead", value:200, spellLevel: 3},
-            {name: "Thunder Step", value:200, spellLevel: 3},
-            {name: "Vampiric Touch", value:200, spellLevel: 3},
-            {name: "Wall of Water", value:200, spellLevel: 3},
-            {name: "Wind Wall", value:200, spellLevel: 3},
-            {name: "Aura of Life", value:320, spellLevel: 4},
-            {name: "Aura of Purity", value:320, spellLevel: 4},
-            {name: "Banishment", value:320, spellLevel: 4},
-            {name: "Blight", value:320, spellLevel: 4},
-            {name: "Confusion", value:320, spellLevel: 4},
-            {name: "Conjure Minor Elementals", value:320, spellLevel: 4},
-            {name: "Death Ward", value:320, spellLevel: 4},
-            {name: "Dimension Door", value:320, spellLevel: 4},
-            {name: "Dominate Beast", value:320, spellLevel: 4},
-            {name: "Evard's Black Tentacles", value:320, spellLevel: 4},
-            {name: "Fire Shield", value:320, spellLevel: 4},
-            {name: "Grasping Vine", value:320, spellLevel: 4},
-            {name: "Gravity Sinkhole", value:320, spellLevel: 4},
-            {name: "Greater Invisibility", value:320, spellLevel: 4},
-            {name: "Guardian of Faith", value:320, spellLevel: 4},
-            {name: "Guardian of Nature", value:320, spellLevel: 4},
-            {name: "Otiluke's Resilient Sphere", value:320, spellLevel: 4},
-            {name: "Phantasmal Killer", value:320, spellLevel: 4},
-            {name: "Polymorph", value:320, spellLevel: 4},
-            {name: "Raulothim's Psychic Lance", value:320, spellLevel: 4},
-            {name: "Shadow Of Moil", value:320, spellLevel: 4},
-            {name: "Staggering Smite", value:320, spellLevel: 4},
-            {name: "Stone Shape", value:320, spellLevel: 4},
-            {name: "Stoneskin", value:320, spellLevel: 4},
-            {name: "Storm Sphere", value:320, spellLevel: 4},
-            {name: "Summon Aberration", value:320, spellLevel: 4},
-            {name: "Summon Construct", value:320, spellLevel: 4},
-            {name: "Summon Elemental", value:320, spellLevel: 4},
-            {name: "Summon Greater Demon", value:320, spellLevel: 4},
-            {name: "Wall of Fire", value:320, spellLevel: 4},
-            {name: "Animate Objects", value:640, spellLevel: 5},
-            {name: "Banishing Smite", value:640, spellLevel: 5},
-            {name: "Bigby's Hand", value:640, spellLevel: 5},
-            {name: "Circle of Power", value:640, spellLevel: 5},
-            {name: "Cloudkill", value:640, spellLevel: 5},
-            {name: "Cone of Cold", value:640, spellLevel: 5},
-            {name: "Conjure Elemental", value:640, spellLevel: 5},
-            {name: "Conjure Volley", value:640, spellLevel: 5},
-            {name: "Contagion", value:640, spellLevel: 5},
-            {name: "Danse Macabre", value:640, spellLevel: 5},
-            {name: "Dawn", value:640, spellLevel: 5},
-            {name: "Destructive Wave", value:640, spellLevel: 5},
-            {name: "Dispel Evil and Good", value:640, spellLevel: 5},
-            {name: "Far Step", value:640, spellLevel: 5},
-            {name: "Flame Strike", value:640, spellLevel: 5},
-            {name: "Hold Monster", value:640, spellLevel: 5},
-            {name: "Holy Weapon", value:640, spellLevel: 5},
-            {name: "Immolation", value:640, spellLevel: 5},
-            {name: "Insect Plague", value:640, spellLevel: 5},
-            {name: "Negative Energy Flood", value:640, spellLevel: 5},
-            {name: "Passwall", value:640, spellLevel: 5},
-            {name: "Steel Wind Strike", value:640, spellLevel: 5},
-            {name: "Summon Celestial", value:640, spellLevel: 5},
-            {name: "Swift Quiver", value:640, spellLevel: 5},
-            {name: "Synaptic Static", value:640, spellLevel: 5},
-            {name: "Telekinesis", value:640, spellLevel: 5},
-            {name: "Temporal Shunt", value:640, spellLevel: 5},
-            {name: "Wall of Force", value:640, spellLevel: 5},
-            {name: "Wall of Light", value:640, spellLevel: 5},
-            {name: "Wall of Stone", value:640, spellLevel: 5},
-            {name: "Blade Barrier", value:1280, spellLevel: 6},
-            {name: "Bones of the Earth", value:1280, spellLevel: 6},
-            {name: "Chain Lightning", value:1280, spellLevel: 6},
-            {name: "Circle of Death", value:1280, spellLevel: 6},
-            {name: "Disintegrate", value:1280, spellLevel: 6},
-            {name: "Gravity Fissure", value:1280, spellLevel: 6},
-            {name: "Harm", value:1280, spellLevel: 6},
-            {name: "Heal", value:1280, spellLevel: 6},
-            {name: "Investiture of Flame", value:1280, spellLevel: 6},
-            {name: "Investiture of Ice", value:1280, spellLevel: 6},
-            {name: "Investiture of Stone", value:1280, spellLevel: 6},
-            {name: "Mental Prison", value:1280, spellLevel: 6},
-            {name: "Scatter", value:1280, spellLevel: 6},
-            {name: "Soul Cage", value:1280, spellLevel: 6},
-            {name: "Summon Fiend", value:1280, spellLevel: 6},
-            {name: "Sunbeam", value:1280, spellLevel: 6},
-            {name: "Tasha's Otherworldly Guise", value:1280, spellLevel: 6},
-            {name: "True Seeing", value:1280, spellLevel: 6},
-            {name: "Wall of Ice", value:1280, spellLevel: 6},
-            {name: "Wall of Thorns", value:1280, spellLevel: 6},
-            {name: "Crown of Stars", value:2560, spellLevel: 7},
-            {name: "Finger of Death", value:2560, spellLevel: 7},
-            {name: "Fire Storm", value:2560, spellLevel: 7},
-            {name: "Forcecage", value:2560, spellLevel: 7},
-            {name: "Mordenkainen's Sword", value:2560, spellLevel: 7},
-            {name: "Power Word: Pain", value:2560, spellLevel: 7},
-            {name: "Prismatic Spray", value:2560, spellLevel: 7},
-            {name: "Regenerate", value:2560, spellLevel: 7},
-            {name: "Reverse Gravity", value:2560, spellLevel: 7},
-            {name: "Whirlwind", value:2560, spellLevel: 7},
-            {name: "Abi-Dalzim's Horrid Wilting", value:5120, spellLevel: 8},
-            {name: "Animal Shapes", value:5120, spellLevel: 8},
-            {name: "Antipathy/Sympathy", value:5120, spellLevel: 8},
-            {name: "Dark Star", value:5120, spellLevel: 8},
-            {name: "Dominate Monster", value:5120, spellLevel: 8},
-            {name: "Earthquake", value:5120, spellLevel: 8},
-            {name: "Holy Aura", value:5120, spellLevel: 8},
-            {name: "Mind Blank", value:5120, spellLevel: 8},
-            {name: "Power Word: Stun", value:5120, spellLevel: 8},
-            {name: "Sunburst", value:5120, spellLevel: 8},
-            {name: "Blade of Disaster", value:10000, spellLevel: 9},
-            {name: "Foresight", value:10000, spellLevel: 9},
-            {name: "Invulnerability", value:10000, spellLevel: 9},
-            {name: "Mass Heal", value:10000, spellLevel: 9},
-            {name: "Meteor Swarm", value:10000, spellLevel: 9},
-            {name: "Prismatic Wall", value:10000, spellLevel: 9},
-            {name: "Psychic Scream", value:10000, spellLevel: 9},
-            {name: "Ravenous Void", value:10000, spellLevel: 9},
-            {name: "Time Stop", value:10000, spellLevel: 9},
-            {name: "Wish", value:10000, spellLevel: 9},
+            {name: "Acid Splash", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:acid-splash"},
+            {name: "Blade Ward", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:blade-ward"},
+            {name: "Booming Blade", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:booming-blade"},
+            {name: "Chill Touch", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:chill-touch"},
+            {name: "Eldritch Blast", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:eldritch-blast"},
+            {name: "Fire Bolt", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:fire-bolt"},
+            {name: "Frostbite", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:frostbite"},
+            {name: "Green-Flame Blade", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:green-flame-blade"},
+            {name: "Guidance", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:guidance"},
+            {name: "Gust", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:gust"},
+            {name: "Infestation", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:infestation"},
+            {name: "Lightning Lure", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:lightning-lure"},
+            {name: "Mage Hand", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:mage-hand"},
+            {name: "Magic Stone", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:magic-stone"},
+            {name: "Mind Sliver", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:mind-sliver"},
+            {name: "Poison Spray", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:poison-spray"},
+            {name: "Primal Savagery", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:primal-savagery"},
+            {name: "Produce Flame", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:produce-flame"},
+            {name: "Ray of Frost", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:ray-of-frost"},
+            {name: "Sacred Flame", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:sacred-flame"},
+            {name: "Shillelagh", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:shillelagh"},
+            {name: "Shocking Grasp", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:shocking-grasp"},
+            {name: "Spare the Dying", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:spare-the-dying"},
+            {name: "Sword Burst", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:sword-burst"},
+            {name: "Thorn Whip", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:thorn-whip"},
+            {name: "Thunderclap", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:thunderclap"},
+            {name: "Toll the Dead", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:toll-the-dead"},
+            {name: "True Strike", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:true-strike"},
+            {name: "Vicious Mockery", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:vicious-mockery"},
+            {name: "Word of Radiance", value:10, spellLevel: 0, link: "https://dnd5e.wikidot.com/spell:word-of-radiance"},
+            {name: "Armor of Agathys", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:armor-of-agathys"},
+            {name: "Arms of Hadar", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:arms-of-hadar"},
+            {name: "Bane", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:bane"},
+            {name: "Bless", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:bless"},
+            {name: "Burning Hands", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:burning-hands"},
+            {name: "Catapult", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:catapult"},
+            {name: "Chaos Bolt", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:chaos-bolt"},
+            {name: "Chromatic Orb", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:chromatic-orb"},
+            {name: "Compelled Duel", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:compelled-duel"},
+            {name: "Cure Wounds", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:cure-wounds"},
+            {name: "Detect Magic", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:detect-magic"},
+            {name: "Detect Poison and Disease", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:detect-poison-and-disease"},
+            {name: "Dissonant Whispers", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:dissonant-whispers"},
+            {name: "Divine Favor", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:divine-favor"},
+            {name: "Earth Tremor", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:earth-tremor"},
+            {name: "Ensnaring Strike", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:ensnaring-strike"},
+            {name: "Entangle", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:entangle"},
+            {name: "Expeditious Retreat", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:expeditious-retreat"},
+            {name: "Faerie Fire", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:faerie-fire"},
+            {name: "False Life", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:false-life"},
+            {name: "Find Familiar", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:find-familiar"},
+            {name: "Fog Cloud", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:fog-cloud"},
+            {name: "Frost Fingers", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:frost-fingers"},
+            {name: "Gift of Alacrity", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:gift-of-alacrity"},
+            {name: "Goodberry", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:goodberry"},
+            {name: "Grease", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:grease"},
+            {name: "Guiding Bolt", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:guiding-bolt"},
+            {name: "Hail of Thorns", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:hail-of-thorns"},
+            {name: "Healing Word", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:healing-word"},
+            {name: "Hellish Rebuke", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:hellish-rebuke"},
+            {name: "Heroism", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:heroism"},
+            {name: "Hex", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:hex"},
+            {name: "Hunter's Mark", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:hunters-mark"},
+            {name: "Ice Knife", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:inflict-wounds"},
+            {name: "Inflict Wounds", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:inflict-wounds"},
+            {name: "Mage Armor", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:mage-armor"},
+            {name: "Magic Missile", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:magic-missile"},
+            {name: "Protection from Evil and Good", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:protection-from-evil-and-good"},
+            {name: "Ray of Sickness", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:ray-of-sickness"},
+            {name: "Sanctuary", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:sanctuary"},
+            {name: "Searing Smite", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:searing-smite"},
+            {name: "Shield", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:shield"},
+            {name: "Shield of Faith", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:shield-of-faith"},
+            {name: "Sleep", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:sleep"},
+            {name: "Tasha's Caustic Brew", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:tashas-caustic-brew"},
+            {name: "Tasha's Hideous Laughter", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:tashas-hideous-laughter"},
+            {name: "Thunderous Smite", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:thunderous-smite"},
+            {name: "Thunderwave", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:thunderwave"},
+            {name: "Wrathful Smite", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:wrathful-smite"},
+            {name: "Zephyr Strike", value:60, spellLevel: 1, link: "https://dnd5e.wikidot.com/spell:zephyr-strike"},
+            {name: "Aganazzar's Scorcher", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:aganazzars-scorcher"},
+            {name: "Aid", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:aid"},
+            {name: "Barkskin", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:barkskin"},
+            {name: "Blindness/Deafness", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Blindness-Deafness"},
+            {name: "Blur", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Blur"},
+            {name: "Branding Smite", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Branding-Smite"},
+            {name: "Calm Emotions", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Calm-Emotions"},
+            {name: "Cloud of Daggers", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Cloud-of-Daggers"},
+            {name: "Cordon of Arrows", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Cordon-of-Arrows"},
+            {name: "Crown of Madness", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Crown-of-Madness"},
+            {name: "Darkness", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Darkness"},
+            {name: "Darkvision", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Darkvision"},
+            {name: "Dragon's Breath", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Dragons-Breath"},
+            {name: "Enlarge/Reduce", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Enlarge-Reduce"},
+            {name: "Flame Blade", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Flame-Blade"},
+            {name: "Flaming Sphere", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Flaming-Sphere"},
+            {name: "Healing Spirit", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Healing-Spirit"},
+            {name: "Heat Metal", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Heat-Metal"},
+            {name: "Hold Person", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Hold-Person"},
+            {name: "Invisibility", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Invisibility"},
+            {name: "Kinetic Jaunt", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Kinetic-Jaunt"},
+            {name: "Lesser Restoration", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Lesser-Restoration"},
+            {name: "Magic Weapon", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Magic-Weapon"},
+            {name: "Melf's Acid Arrow", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Melfs-Acid-Arrow"},
+            {name: "Mind Spike", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Mind-Spike"},
+            {name: "Mirror Image", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Mirror-Image"},
+            {name: "Misty Step", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Misty-Step"},
+            {name: "Phantasmal Force", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Phantasmal-Force"},
+            {name: "Prayer of Healing", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Prayer-of-Healing"},
+            {name: "Pyrotechnics", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Pyrotechnics"},
+            {name: "Ray of Enfeeblement", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Ray-of-Enfeeblement"},
+            {name: "Scorching Ray", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Scorching-Ray"},
+            {name: "Shadow Blade", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Shadow-Blade"},
+            {name: "Shatter", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Shatter"},
+            {name: "Silence", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Silence"},
+            {name: "Spike Growth", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Spike-Growth"},
+            {name: "Spiritual Weapon", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Spiritual-Weapon"},
+            {name: "Tasha's Mind Whip", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Tashas-Mind-Whip"},
+            {name: "Web", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Web"},
+            {name: "Wither and Bloom", value:120, spellLevel: 2, link: "https://dnd5e.wikidot.com/spell:Wither-and-Bloom"},
+            {name: "Animate Dead", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Animate-Dead"},
+            {name: "Aura of Vitality", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Aura-of-Vitality"},
+            {name: "Beacon of Hope", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Beacon-of-Hope"},
+            {name: "Blinding Smite", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Blinding-Smite"},
+            {name: "Blink", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Blink"},
+            {name: "Conjure Barrage", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Conjure-Barrage"},
+            {name: "Counterspell", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Counterspell"},
+            {name: "Crusader's Mantle", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Crusaders-Mantle"},
+            {name: "Daylight", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Daylight"},
+            {name: "Dispel Magic", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Dispel-Magic"},
+            {name: "Elemental Weapon", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Elemental-Weapon"},
+            {name: "Erupting Earth", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Erupting-Earth"},
+            {name: "Fear", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Fear"},
+            {name: "Fireball", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Fireball"},
+            {name: "Flame Arrows", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Flame-Arrows"},
+            {name: "Fly", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Fly"},
+            {name: "Glyph of Warding", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Glyph-of-Warding"},
+            {name: "Haste", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Haste"},
+            {name: "Hunger Of Hadar", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Hunger-Of-Hadar"},
+            {name: "Hypnotic Pattern", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Hypnotic-Pattern"},
+            {name: "Intellect Fortress", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Intellect-Fortress"},
+            {name: "Life Transference", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Life-Transference"},
+            {name: "Lightning Arrow", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Lightning-Arrow"},
+            {name: "Lightning Bolt", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Lightning-Bolt"},
+            {name: "Major Image", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Major-Image"},
+            {name: "Mass Healing Word", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Mass-Healing-Word"},
+            {name: "Meld into Stone", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Meld-into-Stone"},
+            {name: "Melf's Minute Meteors", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Melfs-Minute-Meteors"},
+            {name: "Pulse Wave", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Pulse-Wave"},
+            {name: "Remove Curse", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Remove-Curse"},
+            {name: "Revivify", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Revivify"},
+            {name: "Slow", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Slow"},
+            {name: "Spirit Guardians", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Spirit-Guardians"},
+            {name: "Summon Lesser Demons", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Summon-Lesser-Demons"},
+            {name: "Summon Shadowspawn", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Summon-Shadowspawn"},
+            {name: "Summon Undead", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Summon-Undead"},
+            {name: "Thunder Step", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Thunder-Step"},
+            {name: "Vampiric Touch", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Vampiric-Touch"},
+            {name: "Wall of Water", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Wall-of-Water"},
+            {name: "Wind Wall", value:200, spellLevel: 3, link: "https://dnd5e.wikidot.com/spell:Wind-Wall"},
+            {name: "Aura of Life", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Aura-of-Life"},
+            {name: "Aura of Purity", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Aura-of-Purity"},
+            {name: "Banishment", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Banishment"},
+            {name: "Blight", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Blight"},
+            {name: "Confusion", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Confusion"},
+            {name: "Conjure Minor Elementals", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Conjure-Minor-Elementals"},
+            {name: "Death Ward", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Death-Ward"},
+            {name: "Dimension Door", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Dimension-Door"},
+            {name: "Dominate Beast", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Dominate-Beast"},
+            {name: "Evard's Black Tentacles", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Evards-Black-Tentacles"},
+            {name: "Fire Shield", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Fire-Shield"},
+            {name: "Grasping Vine", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Grasping-Vine"},
+            {name: "Gravity Sinkhole", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Gravity-Sinkhole"},
+            {name: "Greater Invisibility", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Greater-Invisibility"},
+            {name: "Guardian of Faith", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Guardian-of-Faith"},
+            {name: "Guardian of Nature", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Guardian-of-Nature"},
+            {name: "Otiluke's Resilient Sphere", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Otilukes-Resilient-Sphere"},
+            {name: "Phantasmal Killer", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Phantasmal-Killer"},
+            {name: "Polymorph", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Polymorph"},
+            {name: "Raulothim's Psychic Lance", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Raulothims-Psychic-Lance"},
+            {name: "Shadow Of Moil", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Shadow-Of-Moil"},
+            {name: "Staggering Smite", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Staggering-Smite"},
+            {name: "Stone Shape", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Stone-Shape"},
+            {name: "Stoneskin", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Stoneskin"},
+            {name: "Storm Sphere", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Storm-Sphere"},
+            {name: "Summon Aberration", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Summon-Aberration"},
+            {name: "Summon Construct", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Summon-Construct"},
+            {name: "Summon Elemental", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Summon-Elemental"},
+            {name: "Summon Greater Demon", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Summon-Greater-Demon"},
+            {name: "Wall of Fire", value:320, spellLevel: 4, link: "https://dnd5e.wikidot.com/spell:Wall-of-Fire"},
+            {name: "Animate Objects", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Animate-Objects"},
+            {name: "Banishing Smite", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Banishing-Smite"},
+            {name: "Bigby's Hand", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Bigbys-Hand"},
+            {name: "Circle of Power", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Circle-of-Power"},
+            {name: "Cloudkill", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Cloudkill"},
+            {name: "Cone of Cold", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Cone-of-Cold"},
+            {name: "Conjure Elemental", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Conjure-Elemental"},
+            {name: "Conjure Volley", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Conjure-Volley"},
+            {name: "Contagion", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Contagion"},
+            {name: "Danse Macabre", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Danse-Macabre"},
+            {name: "Dawn", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Dawn"},
+            {name: "Destructive Wave", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Destructive-Wave"},
+            {name: "Dispel Evil and Good", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Dispel-Evil-and-Good"},
+            {name: "Far Step", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Far-Step"},
+            {name: "Flame Strike", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Flame-Strike"},
+            {name: "Hold Monster", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Hold-Monster"},
+            {name: "Holy Weapon", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Holy-Weapon"},
+            {name: "Immolation", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Immolation"},
+            {name: "Insect Plague", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Insect-Plague"},
+            {name: "Negative Energy Flood", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Negative-Energy-Flood"},
+            {name: "Passwall", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Passwall"},
+            {name: "Steel Wind Strike", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Steel-Wind-Strike"},
+            {name: "Summon Celestial", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Summon-Celestial"},
+            {name: "Swift Quiver", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Swift-Quiver"},
+            {name: "Synaptic Static", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Synaptic-Static"},
+            {name: "Telekinesis", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Telekinesis"},
+            {name: "Temporal Shunt", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Temporal-Shunt"},
+            {name: "Wall of Force", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Wall-of-Force"},
+            {name: "Wall of Light", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Wall-of-Light"},
+            {name: "Wall of Stone", value:640, spellLevel: 5, link: "https://dnd5e.wikidot.com/spell:Wall-of-Stone"},
+            {name: "Blade Barrier", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Blade-Barrier"},
+            {name: "Bones of the Earth", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Bones-of-the-Earth"},
+            {name: "Chain Lightning", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Chain-Lightning"},
+            {name: "Circle of Death", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Circle-of-Death"},
+            {name: "Disintegrate", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Disintegrate"},
+            {name: "Gravity Fissure", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Gravity-Fissure"},
+            {name: "Harm", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Harm"},
+            {name: "Heal", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Heal"},
+            {name: "Investiture of Flame", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Investiture-of-Flame"},
+            {name: "Investiture of Ice", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Investiture-of-Ice"},
+            {name: "Investiture of Stone", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Investiture-of-Stone"},
+            {name: "Mental Prison", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Mental-Prison"},
+            {name: "Scatter", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Scatter"},
+            {name: "Soul Cage", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Soul-Cage"},
+            {name: "Summon Fiend", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Summon-Fiend"},
+            {name: "Sunbeam", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Sunbeam"},
+            {name: "Tasha's Otherworldly Guise", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Tashas-Otherworldly-Guise"},
+            {name: "True Seeing", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:True-Seeing"},
+            {name: "Wall of Ice", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Wall-of-Ice"},
+            {name: "Wall of Thorns", value:1280, spellLevel: 6, link: "https://dnd5e.wikidot.com/spell:Wall-of-Thorns"},
+            {name: "Crown of Stars", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Crown-of-Stars"},
+            {name: "Finger of Death", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Finger-of-Death"},
+            {name: "Fire Storm", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Fire-Storm"},
+            {name: "Forcecage", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Forcecage"},
+            {name: "Mordenkainen's Sword", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Mordenkainens-Sword"},
+            {name: "Power Word: Pain", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Power-Word-Pain"},
+            {name: "Prismatic Spray", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Prismatic-Spray"},
+            {name: "Regenerate", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Regenerate"},
+            {name: "Reverse Gravity", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Reverse-Gravity"},
+            {name: "Whirlwind", value:2560, spellLevel: 7, link: "https://dnd5e.wikidot.com/spell:Whirlwind"},
+            {name: "Abi-Dalzim's Horrid Wilting", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Abi-Dalzims-Horrid-Wilting"},
+            {name: "Animal Shapes", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Animal-Shapes"},
+            {name: "Antipathy/Sympathy", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Antipathy-Sympathy"},
+            {name: "Dark Star", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Dark-Star"},
+            {name: "Dominate Monster", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Dominate-Monster"},
+            {name: "Earthquake", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Earthquake"},
+            {name: "Holy Aura", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Holy-Aura"},
+            {name: "Mind Blank", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Mind-Blank"},
+            {name: "Power Word: Stun", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Power-Word-Stun"},
+            {name: "Sunburst", value:5120, spellLevel: 8, link: "https://dnd5e.wikidot.com/spell:Sunburst"},
+            {name: "Blade of Disaster", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Blade-of-Disaster"},
+            {name: "Foresight", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Foresight"},
+            {name: "Invulnerability", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Invulnerability"},
+            {name: "Mass Heal", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Mass-Heal"},
+            {name: "Meteor Swarm", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Meteor-Swarm"},
+            {name: "Prismatic Wall", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Prismatic-Wall"},
+            {name: "Psychic Scream", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Psychic-Scream"},
+            {name: "Ravenous Void", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Ravenous-Void"},
+            {name: "Time Stop", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:Time-Stop"},
+            {name: "Wish", value:10000, spellLevel: 9, link: "https://dnd5e.wikidot.com/spell:"},
         ];
 const armorTable = [
             {tier: 1, weight: 7, name: "Sandals", class: "Feet", armorClass: "-", proficiency: "-", strReq: "-", dexReq: "-", dexMax: "-", prowessBonus: "-", value: 1}, 
@@ -2426,3 +2456,20 @@ const rareName2 = [
 {baseItem: "Templar Plate", baseItemType: "armor", uniqueName: "unique Templar Plate", properties: ["property 1", "property 2"], multiplier: 5, tier: 4, weight: 10},
 ];
 
+const prowessTable = [
+{prowessName: "Anchored", prowessFeature: "Forced movement from a push or pull is reduced by 5 feet", prowessGearType: "Armor"},
+{prowessName: "Braced", prowessFeature: "You may use your move action to instead gain the effect of partial cover.", prowessGearType: "Armor"},
+{prowessName: "Dashing", prowessFeature: "When you use the Dash action, your speed increases by 10 feet for that movement", prowessGearType: "Armor"},
+{prowessName: "Fortified", prowessFeature: "When you take the dodge action, you gain temporary hit points equal to your Proficiency Bonus", prowessGearType: "Armor"},
+{prowessName: "Reinforced", prowessFeature: "When you are hit with a melee attack, you can use your reaction to reduce the attack roll by 1d4", prowessGearType: "Armor"},
+{prowessName: "Aim", prowessFeature: "You may use your move action to instead gain advantage on your next attack roll", prowessGearType: "Weapon"},
+{prowessName: "Bleed", prowessFeature: "After a hit, the target takes an additional 1d4 damage at the end of their next turn", prowessGearType: "Weapon"},
+{prowessName: "Brutal ", prowessFeature: "Treat any 1's rolled with this weapon as a 2 instead", prowessGearType: "Weapon"},
+{prowessName: "Cleave", prowessFeature: "After a hit, you can deal glancing damage to an adjacent target within reach", prowessGearType: "Weapon"},
+{prowessName: "Debilitate", prowessFeature: "After a hit, the target has -1 to all attack rolls until the start of your next turn", prowessGearType: "Weapon"},
+{prowessName: "Hinder", prowessFeature: "After a hit, your target's speed is reduced by half or by 20 feet, whichever is higher", prowessGearType: "Weapon"},
+{prowessName: "Skewer", prowessFeature: "After a hit, you can deal glancing damage to an additional creature behind the target", prowessGearType: "Weapon"},
+{prowessName: "Stagger", prowessFeature: "After a hit, the target cannot take reactions until the start of your next turn", prowessGearType: "Weapon"},
+{prowessName: "Sunder", prowessFeature: "After a hit, the target has a -1 to their AC until the start of your next turn", prowessGearType: "Weapon"},
+{prowessName: "Wide Critical", prowessFeature: "Your critical hit range is increased by 1", prowessGearType: "Weapon"},
+]

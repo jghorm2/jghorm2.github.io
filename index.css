@@ -358,22 +358,17 @@
             background: #ffd7000d;
         }
 
-
-        /* rule-adjustments Styles */
-        .info-table {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+.info-table {
+    display: block;
         }
 .info-table {
-    width: fit-content; /* Change from width: 100% */
+    width: fit-content;
     border-collapse: collapse;
     background: #00000033;
     border-radius: 8px;
     overflow: hidden;
     margin: 20px 0;
-
-            padding: 10px
+    padding: 10px;
         }
 
         .info-table th {
@@ -420,8 +415,10 @@
 
 /* Ensure tables don't shrink below their content */
 .data-table, .info-table {
-    min-width: 600px; /* Set minimum width for your tables */
-    margin: 0; /* Remove margin since wrapper handles it */
+    border: 1px solid #ffd7004d;
+    overflow-x: auto;
+    overflow-y: visible;
+
     width: 100%;
 }
 
@@ -741,6 +738,16 @@
     font-weight: bold;
 }
 
+.table-spell-link {
+    color: #4ca5e6;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.table-spell-link:hover {
+    color: #6bc0ff;
+    text-decoration: underline;
+}
 .spell-link {
     color: #4ca5e6;
     text-decoration: none;
@@ -827,4 +834,24 @@
 .unique-property p {
     margin: 0;
     color: #e0d0c0;
+}
+
+/* Prowess feature styling */
+.prowess-detail {
+    background: #ffffff05;
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border-left: 3px solid #ceca95;
+}
+
+.prowess-name {
+    color: #ceca95;
+    margin: 0 0 5px 0;
+    font-size: 1.05em;
+}
+
+.prowess-feature {
+    margin: 0;
+    color: #d0d0d0;
 }
