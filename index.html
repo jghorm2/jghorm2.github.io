@@ -10,7 +10,7 @@
     <div class="container">
         <h1>Enter the Catacombs<br>Loot Generator</h1>
         
-        <div class="tab-nav">
+<div class="tab-nav">
             <button class="tab-btn active" onclick="openTab(event, 'loot-roller')">Loot Roller</button>
             <button class="tab-btn" onclick="openTab(event, 'item-creator')">Item Creator</button>
             <button class="tab-btn" onclick="openTab(event, 'potions')">Potions</button>
@@ -20,6 +20,7 @@
             <button class="tab-btn" onclick="openTab(event, 'prefixes')">Prefixes</button>
             <button class="tab-btn" onclick="openTab(event, 'suffixes')">Suffixes</button>
 			<button class="tab-btn" onclick="openTab(event, 'curses')">Curses</button>
+            <button class="tab-btn" onclick="openTab(event, 'unique-gear')">Unique Gear</button>
             <button class="tab-btn" onclick="openTab(event, 'rule-adjustments')">EtC Rule Changes</button>
             <button class="tab-btn" onclick="openTab(event, 'prowess-features')">Prowess Features</button>
             
@@ -355,6 +356,26 @@
                 </div>
             </div>
 
+            <!-- Unique Gear Tab -->
+            <div id="unique-gear" class="tab-pane">
+                <h2>Unique Gear Table</h2>
+                <div class="table-wrapper">
+                <table class="data-table" id="unique-gear-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Base Item</th>
+                            <th>Gear Type</th>
+                            <th>Properties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
             <!-- prowess Tab -->
             <div id="prowess-features" class="tab-pane">
                 <div class="table-wrapper">
@@ -372,60 +393,105 @@
                 </table>
                 </div>
             </div> 
-            <!-- rule-adjustments Tab -->
             <div id="rule-adjustments" class="tab-pane">
                 <div class="rule-adjustments-section">
 
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!--------------------------------------------------------------------- TLDR --------------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<h2>TLDR</h2>
+    &nbsp;&nbsp; Summation of this page. Read each related section for more details and other important rule adjustments.
+<h3>Calculations</h3>
+<span class="term">Bloodied Value</span><br>
+    &nbsp;&nbsp;(Total Hit Points) divided by 2<br>
+<span class="term">Healing Surge Value</span><br>
+    &nbsp;&nbsp;(Bloodied Value) divided by 2 <b><i>OR</i></b> (Total Hit Points) divided by 4<br>
+<span class="term">Physical Save DC</span><br>
+    &nbsp;&nbsp;PDC = 8 + [Str/Dex/Con] + Proficiency Bonus<br>
+<span class="term">Mental Save DC</span><br>
+    &nbsp;&nbsp;MDC = 8 + [Int/Wis/Cha] + Proficiency Bonus<br>
+<span class="term">Armor Class (AC)</span><br>
+    &nbsp;&nbsp;8 + Torso Armor stat + ½ for each Accoutrement armor piece<br>
+    <br>
+<h3>New Systems</h3>
+<span class="term">Armor Points</span><br>
+    &nbsp;&nbsp; Hit point pool similar but independent to temporary hit points. Gained from gear, recovers every encounter.<br>
+<span class="term">Spell Points</span><br>
+    &nbsp;&nbsp; Used in place of spell slots. Recover in the same manner as spell slots, values are listed on the provided table.<br>
+<span class="term">Ability Score Requirements</span><br>
+    &nbsp;&nbsp; All gear has listed ability scores to use. These stats can be used in place of armor proficiencies from Class Features and Feats.<br>
+<span class="term">Prowess Features</span><br>
+    &nbsp;&nbsp; A combat bonus from specific gear types if the wearer has both the required poficiency and ability scores.<br>
+    <br>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!-------------------------------------------------------------- Character Creation -------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Character Creation</h2>
 <h3>Ability Scores</h3>
 <span class="term">At level 1</span><br>
     &nbsp;&nbsp;• Start with 6 ability scores of <i><b>10, 10, 10, 10, 8, 8,</b></i> that can be assigned to any score.<br>
-    &nbsp;&nbsp;• You then have <i><b>14</b></i> points you can distribute in any combination, with only 1 score allowed to reach 17.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: values are not weighted as you ascend, as with traditional point buy systems).</i><br>
-    &nbsp;&nbsp;• You do not get an ancestry or background boost to your ability scores.<br>
-<br>
+    &nbsp;&nbsp;• Characters have <i><b>14</b></i> points that can be distributed in any combination, with only 1 score allowed to reach 17.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: values are not weighted as they ascend, as with traditional point buy systems; each step up is 1 point).</i><br>
+    &nbsp;&nbsp;• Characters do not get an ancestry or background boost to ability scores.<br>
 <span class="term">Leveling up</span><br>
-    &nbsp;&nbsp;• You gain <i><b>1</b></i> ability point to assign as you wish at every level.<br>
-    &nbsp;&nbsp;• At levels where your class would normally receive an ability score increase, you instead choose a feat.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(NOTE: D&D5.24 has the "Ability Score Improvement" feat, where you would then gain 3 ability points that level)</i>
-<br><br>
-<span class="term">Hit Point Calculation</span><br>
-    &nbsp;&nbsp;• At level 1:<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Score + Class hit die max"</b></i>,<br>
-    &nbsp;&nbsp;• Subsequent levels:<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>"Constitution Modifier + Class hit die rolled"</b></i>.<br>
-    &nbsp;&nbsp;• Rolled 1's on hit dice are counted as 2.
+    &nbsp;&nbsp;• Characters gain <i><b>1</b></i> ability point to assign to any Ability Score at all levels.<br>
+    &nbsp;&nbsp;• If a character chooses the "Ability Score Improvement" feat, they would gain 3 ability points that level <i>(2 from the feat, 1 from level up)</i>. <br>
+<br>
+<h3>Save DCs</h3>
+    &nbsp;&nbsp;<span class="term">Universal DCs</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;All characters track two Save DCs: their Physical Save (PDC) and Mental Save (MDC) which are used for items, features and spells.<br>
+    &nbsp;&nbsp;<span class="term">Physical Save DCs</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Choose one ability modifier from Strength, Constitution, or Dexterity and caluclate: <i><b>"PDC = 8 + Ability Modifier + Proficiency Bonus"</b></i><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Used for most gear save effects<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Used for race and class features*<br>
+    &nbsp;&nbsp;<span class="term">Mental Save DCs</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Choose one ability modifier from Intelligence, Wisdom, or Charisma and caluclate: <i><b>"MDC = 8 + Ability Modifier + Proficiency Bonus"</b></i><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Used for most spell saves<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Used for race and class features*<br><br>
+
+    &nbsp;&nbsp;<i>*If a feature lists an ability score as a save (e.g. Wisdom for monk Ki Saves), use the appropriate PDC or MDC based on the given ability score, even if it is different from the one listed</i><br>
+<br>
+
+<h3>Hit Point Calculation</h3>
+    &nbsp;&nbsp;<span class="term">At level 1:</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Starting Hit Points: <i><b>"Constitution Score + Class hit die max"</b></i><br>
+    &nbsp;&nbsp;<span class="term">Subsequent levels:</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Hit Points from level up: <i><b>"Constitution Modifier + Class hit die rolled"</b></i><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Rolled 1’s on hit dice are counted as 2
 <br><br>
 
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!-------------------------------------------------------------- Stats & Proficiency ------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Stats & Proficiency</h2>
 <h3> Using and Equiping Gear</h3>
     &nbsp;&nbsp;• A character can effectively utilyze an item if they have:<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>proficiency</b> or<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• The listed <b>ability score</b>(s).<br>
     &nbsp;&nbsp;• If the character has both, they gain the item’s <b>Prowess Bonus</b>, an extra benefit tied to that weapon or armor.<br>
-    &nbsp;&nbsp;• All pieces of gear will have an ability score requirement, listed on their respective gear table.
-<br><br>
+    &nbsp;&nbsp;• All pieces of gear will have an ability score requirement, listed on their respective gear table.<br>
+<br>
 
 <h3>Unmet Requirements Penalties</h3>
-    &nbsp;&nbsp;• You can equip armor and weapons without meeting requirements.<br>
+    &nbsp;&nbsp;• Characters can equip armor and weapons without meeting requirements.<br>
     &nbsp;&nbsp;• Weapons do not gain proficiency bonus in attack rolls, but can be used in all other ways.<br>
-    &nbsp;&nbsp;• Armors grant AC bonuses, but while wearing it, you have<br> 
+    &nbsp;&nbsp;• Wearing armors grant AC bonuses, but characters have:<br> 
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Disadvantage on attack rolls<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Target creatures have advantage on spell saves against spells you cast.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Depending on the armor type, you may suffer an additional armor penalty.<br>
-    &nbsp;&nbsp;• If you do not have either the proficiency or the required abilty scores, you <b>still gain the enchantment properties from equipped gear</b>.<br>
-<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Target creatures have advantage on saves against spells they cast<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Additional armor penalties depending on armor type<br>
+    &nbsp;&nbsp;• If a character does not have either the proficiency or the required abilty scores, they still<b> gain the enchantment properties from equipped gear</b>.<br>
+<br>
 
 <h3>Additional Armor Penalty per type:</h3>
 <span class="term">&nbsp;&nbsp;• Light Armor:</span> Cannot add Dex mod to AC.<br>
 <span class="term">&nbsp;&nbsp;• Medium Armor:</span> Cannot add Dex mod to AC, disadvantage on stealth, speed –5 ft.<br>
-<span class="term">&nbsp;&nbsp;• Heavy Armor:</span> Disadvantage on stealth, speed halved.
-<br><br>
+<span class="term">&nbsp;&nbsp;• Heavy Armor:</span> Disadvantage on stealth, speed halved.<br>
+<br>
 
 <h2>Armor Points and AC</h2>
 <h3>Base AC</h3>
     &nbsp;&nbsp;• Characters’ unarmored AC calculation starts at<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i><b>8 + Dex modifier (min 0) instead of 10 + Dex mod.</b></i>,<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <i><b>8 + Dex modifier (min 0) </b></i>instead of <i><b>10 + Dex mod.</b></i><br><br>
 
 <h3>Torso Armor</h3>
     &nbsp;&nbsp;• Takes the place of the 5E armors, and allows only 1 torso piece equipped.<br><br>
@@ -436,23 +502,31 @@
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Hands<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Waist<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Feet<br></i>
-    &nbsp;&nbsp;• Equipping a piece of gear in these slots grants <i><b>+½ AC</b> (round down after adding all sources).</i>,<br><br>
+    &nbsp;&nbsp;• Equipping a piece of gear in these slots grants <i><b>+½ AC</b> (round down after adding all sources).</i><br><br>
 
+<h3>Natural Armors and Feature AC</h3>
+    &nbsp;&nbsp;• Features and spells that give a calculation of "10 + your ___ modifier" are instead calculated "8 + your ___ modifier".<br>
+    &nbsp;&nbsp;• If a feature or spell prohibits you from wearing "armor" in its original text, instead treat it as a restriction for "torso armor".<br>
+    &nbsp;&nbsp;• Natural Armors from your lineage or similar sources are calculated at their listed value -2. <i>(The Tortle's Natural AC of 17 is reduced to 15)</i><br><br>
 
 <h3>Armor Points (AP)</h3>
-    &nbsp;&nbsp;• A separate pool of expendable hit points.<br>
-    &nbsp;&nbsp;• Refreshes at the start of each combat.<br>
-    &nbsp;&nbsp;• Typically granted by gear.<br>
-    &nbsp;&nbsp;• Distinct from HP and Temporary HP.<br><br>
-
+    &nbsp;&nbsp;• A separate pool of expendable hit points<br>
+    &nbsp;&nbsp;• Refreshes at the start of each combat<br>
+    &nbsp;&nbsp;• Typically granted by gear<br>
+    &nbsp;&nbsp;• Distinct from HP and Temporary HP<br><br>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!----------------------------------------------------------------- Spellcasting ----------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Spellcasting</h2>
-<h3>Everyone's a Caster</h3>
+<h3>Everyone’s a Caster</h3>
     &nbsp;&nbsp;• Any player character can read any spell scroll or read a spell Book.<br>
     &nbsp;&nbsp;• If a character cannot normally cast the spell in the scroll or book, they must make a spell casting check.<br>
         &nbsp;&nbsp;&nbsp;&nbsp;<b>Spell Casting Check:</b><br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>DC = "10 + the Spell's Level"</b></i>.<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>DC = "10 + the Spell’s Level"</b></i>.<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i><b>Check = "1d20 + Spellcasting Modifier"</b></i>.<br>
     &nbsp;&nbsp;• If the character does not have a Spellcasting Modifier already, they will use their Intelligence modifier.<br>
+    &nbsp;&nbsp;• When a character succesfully casts from a spell scroll, the spell is cast at that moment.
+    &nbsp;&nbsp;• When a character succesfully reads a spell book, they do not cast the spell, but instead add it to their list of known spells.
     &nbsp;&nbsp;• If a character learns a spell, but does not have a natural pool of Spell Points large enough to cast it, they increase their SP to the casting cost of the new spell.
 <br><br>
 <h3>Spell Points (SP)</h3>
@@ -461,7 +535,12 @@
     &nbsp;&nbsp;• Points refresh on a long rest.<br>
     &nbsp;&nbsp;• Sorcerers or other classes that gain access to “Sorcery Points” can add those points into their Spell Point total.<br>
     &nbsp;&nbsp;• Warlocks regain their warlock spell points during a short or long rest.<br>
-    &nbsp;&nbsp;• Half Casters, such as Paladins and Rangers, and Third Casters, such as Eldritch Knights and Trickster Rogues, are both included below.<br><br>
+    &nbsp;&nbsp;• Half Casters, such as Paladins and Rangers, and Third Casters, such as Eldritch Knights and Trickster Rogues, are both included in the table below.<br>
+    &nbsp;&nbsp;• When multiclassing, add the current level of each class together, in line with the table below.<br><br>
+<h3>Casting "From This Item"</h3>
+    &nbsp;&nbsp;Some pieces of gear allow a character to cast spells "from this item". When using these items, characters do not add the spell to their spell list, and do not expend and spell points to cast it. All other aspects of the spell remain the same unless specified.<br><br>
+
+    <h3>Spell Point Tables</h3>
     <div class="info-table">
         <!-- Spell Point Pools -->
         <table cellpadding="0">
@@ -517,36 +596,66 @@
         </table> 
     </div>
 <br>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!-------------------------------------------------------- Healing, Potions, and Resting --------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Healing, Potions, and Resting</h2>
 <h3>Healing Surges</h3>
-    &nbsp;&nbsp;• Healing Surges are a percentage based healing based around your total hit points. 1 Healing Surge is one quarter of your total hit points, rounded down.<br>
-    &nbsp;&nbsp;• Characters <i><b>have 3 + Constitution Modifier (minimum 0)</i></b> Healing Surges per day.<br>
+    &nbsp;&nbsp;• Healing Surges are a percentage based healing based around a character’s total hit points. 1 Healing Surge is one quarter of their total hit points, rounded down.<br>
+    &nbsp;&nbsp;• Characters <i><b>have 3 + Constitution Modifier (minimum 0)</i></b> Healing Surges per day.<br><br>
 <h3>Healing With Potions</h3>
     &nbsp;&nbsp;• Drinking a Potion of any kind (regardless of the potion size) expends one Healing Surge.<br>
-    &nbsp;&nbsp;• Drinking a healing potion without any Healing Surges restores hit points equal to your level, regardless of the potion's size.<br>
+    &nbsp;&nbsp;• Drinking a healing potion without any Healing Surges restores hit points equal to your level, regardless of the potion’s size.<br><br>
 <h3>Short and Long Rests</h3>
     &nbsp;&nbsp;• When taking a long rest, you must sleep in town. The cost of a night at the in is <b>50gp × your character level</b>.<br>
     &nbsp;&nbsp;• Resting in the dungeon will always count as a short rest, regardless if you rest longer.<br>
     &nbsp;&nbsp;• When taking a Short Rest, characters can expend any healing surges they currently have to regain healh.<br><br>
-
+<h3>Hit Point and Spell Point Maximums From Gear</h3>
+    &nbsp;&nbsp;• When a character equips a magic item that increases the maximum Hit Point or Spell Point totals, the character’s current and maximum values for that pool both increase by the listed amount.<br>
+    &nbsp;&nbsp;• This bonus can only be applied once per long rest. Removing and re-equipping the item does not grant the benefit again.<br>
+    &nbsp;&nbsp;&nbsp;<i>(Play fair! No re-equipping tricks!)</i><br><br>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!---------------------------------------------------------------- Exploration ------------------------------------------------------------------>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Exploration</h2>
 <h3>Light</h3>
     &nbsp;&nbsp;• Light levels from D&D5E sources are all halved.<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 1: If you have 60' of darkvision, in EtC you have 30' instead.</i><br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 2: A torch that sheds 20' of bright light and 20' of dim light, will instead shed 10' and 10', respectively.</i><br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>Example 2: A torch that sheds 20' of bright light and 20' of dim light, will instead shed 10' and 10', respectively.</i><br>
+    &nbsp;&nbsp;• When not actively using a light source, such as a torch or magic item, chracters produce 5 feet of dim light and no bright light.<br><br>
+<h3>Aggro</h3>
+    &nbsp;&nbsp;While exploring a dungeon, characters can <i>"Aggro"</i> monsters, intentionally or unintentionally drawing their attention and triggering combat. Monsters remain passive and idle regardless of line of sight until one of the following conditions occurs:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A monster is exposed within the radius of a character’s light radius.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A character moves within 20 feet of a monster without being hidden or stealthed.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A character makes an attack against the monster.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Another monster within 20 feet of it enters combat.<br>
+    &nbsp;&nbsp;When any of these conditions are met, the affected monster becomes hostile and enters combat, joining initiative as normal.<br><br>  
+
 <h3>Loot</h3>
 <span class="term">&nbsp;&nbsp;Loot Roll:</span> A single roll using the Enter the Catacombs Loot Roller.<br>
     &nbsp;&nbsp;• For every monster defeated, you gain 1 Loot Roll.<br>
     &nbsp;&nbsp;• For every chest, barrel, or other container you search, you gain 1 Loot Roll.<br>
     &nbsp;&nbsp;• Looting bodies takes time. For every 5 Loot Rolls, you must spend 1 uninterrupted minute looting the area.<br><br>
+<h3>Extra Gold and Loot Drops</h3>
+        &nbsp;&nbsp;When a character has an item that gives bonus loot rolls or extra gold, this benefits are applied to the whole party's loot when looting. Gold calculations that are extra percent of gold is additive.<br>
+        &nbsp;&nbsp;<i>Example:</i><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;• Player 1 has +20% gold, and rolls an extra item.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;• Player 2 has +30% gold.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;• The party has 12 loot rolls from monsters and chests.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;• The party receives 13 loot rolls because of Player 1.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;• The 13 rolls net 200 gold. 200 × 150% <i>(100% + 20% + 30%)</i> = 300 gold.<br>
+    <br>
 <h3>Buying and Selling Gear</h3>
-    &nbsp;&nbsp;• When selling an item to a town vendor, you gain GP equal to the item's value.<br>
+    &nbsp;&nbsp;• When selling an item to a town vendor, you gain GP equal to the item’s value.<br>
     &nbsp;&nbsp;• Town vendors generate 5 enchanted items per long rest.<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>(The tier should be calculated as twice the current dungeon level, instead of "dungeon level + character level".)</i><br>
-    &nbsp;&nbsp;• Town vendors sell their gear at 4× the item's value.
+    &nbsp;&nbsp;• Town vendors sell their gear at 4× the item’s value.
 <br><br>
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
+<!-------------------------------------------------------------------- Combat -------------------------------------------------------------------->
+<!------------------------------------------------------------------------------------------------------------------------------------------------>
 <h2>Combat</h2>
-<h3>New Mechanics</h3>
+<h3>Optional Mechanics</h3>
     &nbsp;&nbsp;<span class="term">Hit Ranges</span><br>
         &nbsp;&nbsp;&nbsp;&nbsp;When you make an attack, compare your total attack roll to the target’s Defense (DC or AC):<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• Major Hit: Your attack roll exceeds the target’s Defense by 10 or more.<br>
@@ -569,19 +678,41 @@
         </table>
     </div><br>
 
+<h3>New & Altered Mechanics</h3>
     &nbsp;&nbsp;<span class="term">Save Ends</span><br>
         &nbsp;&nbsp;&nbsp;&nbsp;• Effects with a status listed until "Save Ends", occur until a creature makes their save.<br>
         &nbsp;&nbsp;&nbsp;&nbsp;• Unless specified, saves against ongoing effects occur at the end of a turn.<br>
     &nbsp;&nbsp;<span class="term">Shift</span><br>
-        &nbsp;&nbsp;&nbsp;&nbsp;• Use your move action to move 5 feet. This movement does not provoke opportunity attacks.<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Use your move action to move 5 feet. This movement does not provoke opportunity attacks.<br>
+    &nbsp;&nbsp;<span class="term">"Thrown" Property</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Any magical weapon with the 'thrown' property will automatically return to the wielder at the end of the attack. If a character can attack multiple times in an attack action, these thrown items can be used for each attack.<br>    
+    &nbsp;&nbsp;<span class="term">"Loading" Property</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• When a weapon has the 'loading' property, it can only be fired once per turn, unless the wielder uses a bonus action to reload the weapon. This can be expended between attacks if a character can attack multiple times with the attack action.<br>
+    &nbsp;&nbsp;<span class="term">Pushing and Pulling</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Whenever an ability or item pushes or pulls a creature, you mayincrease or decrease the distance by 5 feet for each size category the creature is larger or smaller than the source, respectively.<br>
+        <br>
 
 <h3>Terminology</h3>
+    &nbsp;&nbsp;<span class="term">Combat</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A state of active conflict in which creatures or entities act with intent to harm or overcome one another.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Time is measured in rounds and turns, and creatures act in a structured sequence determined by initiative.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Combat ends when all hostilities cease, no creature remains able or willing to fight, or when initiative is no longer needed to track events.<br>
+    &nbsp;&nbsp;<span class="term">Encounter</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• A segment of time during which characters face a significant challenge, most often through combat.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Begins when the situation demands structured play, such as rollig initiative, triggering a trap, or an obstacle requires focused resolution.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Encounters continue so long as threats or other time-sensitive challenges remain active, and end once those threats are resolved and the characters have a brief period to rest, regroup, or act without time pressure.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• When an encounter ends, any abilities or effects that refresh after an encounter are restored, and ongoing effects tied to the encounter’s duration conclude unless otherwise specified.<br>
     &nbsp;&nbsp;<span class="term">Glancing Damage</span><br>
-        &nbsp;&nbsp;&nbsp;&nbsp;• Deal your weapon's base damage dice, without any any modifiers or additions.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Deal your weapon’s base damage dice, without any any modifiers or additions.<br>
         &nbsp;&nbsp;&nbsp;&nbsp;• Does not count as "hitting" with a weapon attack.<br>
-            &nbsp;&nbsp;<span class="term">Bloodied</span><br>
+    &nbsp;&nbsp;<span class="term">Bloodied</span><br>
         &nbsp;&nbsp;&nbsp;&nbsp;• A creature with less than half of their total Hit Points is considered "Bloodied".<br>
         &nbsp;&nbsp;&nbsp;&nbsp;• Certain effects can occur when a creature becomes bloodied, or whether they are or are not bloodied.<br>
+    &nbsp;&nbsp;<span class="term">Elemental and Physical Damage</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Any damage that deals acid, cold, fire, force, lightning, necrotic, poison, psychic, radiant, or thunder damage, is considered "Elemental" damage.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• Any damage that deals bludgeoning, piercing, or slashing damage, is considered "Physical" damage.<br>
+    &nbsp;&nbsp;<span class="term">"Weapon" Damage</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;• The base damage dice for a given weapon, before any modifiers, class abilities, or item enchantmens are added.
 
 
             </div>

@@ -452,7 +452,11 @@
             border-bottom: 2px solid #ffd7004d;
             padding-bottom: 5px;
         }
+        .rule-adjustments-section h3 {
+            color: #fffab7;
+            font-size: 1.4em;
 
+        }
         .rule-adjustments-section p {
             margin-bottom: 10px;
             line-height: 1.7;
@@ -854,4 +858,24 @@
 .prowess-feature {
     margin: 0;
     color: #d0d0d0;
+}
+
+/* Bonus roll indicator */
+.bonus-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #000;
+    font-size: 0.7em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.bonus-roll-note {
+    font-size: 0.85em;
+    color: #ffd700;
+    margin-top: 5px;
+    font-style: italic;
 }
